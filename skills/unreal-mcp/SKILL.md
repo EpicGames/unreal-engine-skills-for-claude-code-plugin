@@ -9,7 +9,7 @@ Unreal MCP exposes hundreds of tools from the Unreal Editor through an MCP serve
 
 All tools are auto-discovered via MCP. You do not need to memorize tool names. They appear in Claude Code's tool list when the editor is connected.
 
-When **deferred tool loading** is enabled (the default), `tools/list` returns three lightweight tools — `list_toolsets`, `describe_toolset`, and `load_toolset` — instead of the full set of tool schemas. This keeps the initial context window small. Use `list_toolsets` to discover available toolsets, `describe_toolset` to inspect a toolset's tools and schemas, and `load_toolset` to register a toolset's tools as native MCP tools. Loaded tools become available on the **next** client turn, not in the same response as the `load_toolset` call. Deferred loading can be toggled with the `ModelContextProtocol.DeferredToolLoading` console variable.
+When **deferred tool loading** is enabled (the default), `tools/list` returns three lightweight tools (`list_toolsets`, `describe_toolset`, and `load_toolset`) instead of the full set of tool schemas. This keeps the initial context window small. Use `list_toolsets` to discover available toolsets, `describe_toolset` to inspect a toolset's tools and schemas, and `load_toolset` to register a toolset's tools as native MCP tools. Loaded tools become available on the **next** client turn, not in the same response as the `load_toolset` call. Deferred loading can be toggled with the `ModelContextProtocol.DeferredToolLoading` console variable.
 
 ## Prerequisites
 

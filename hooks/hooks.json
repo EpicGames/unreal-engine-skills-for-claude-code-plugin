@@ -1,0 +1,17 @@
+{
+  "description": "Unreal MCP plugin hooks",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/unreal-context.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
