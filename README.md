@@ -19,26 +19,48 @@ Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools expos
 
 ## Installation
 
-Add the plugin path to your project's `.claude/settings.json`:
+Claude Code plugins are installed via the `/plugin` slash command family, backed by marketplaces. This repo is a standalone plugin (one `.claude-plugin/plugin.json`, no `marketplace.json`), so it is installed by registering the repo directory as a marketplace, then installing the `unreal-mcp` plugin from it.
+
+### Option A: Interactive, for a single developer
+
+In Claude Code:
+
+```
+/plugin marketplace add /path/to/unreal-mcp-plugin
+/plugin install unreal-mcp@unreal-mcp-plugin
+```
+
+The marketplace name (`unreal-mcp-plugin`) is taken from the directory name when the repo is added via `/plugin marketplace add`. If you add the repo from a differently-named directory, substitute that name in the second command.
+
+### Option B: Project `.claude/settings.json`, for a team
+
+Commit this to `.claude/settings.json` in the project that should use the plugin. Anyone who trusts the project folder is prompted to install it automatically:
 
 ```json
 {
-  "plugins": ["/path/to/unreal-mcp-plugin"]
+  "extraKnownMarketplaces": {
+    "unreal-mcp-local": {
+      "source": {
+        "source": "directory",
+        "path": "/path/to/unreal-mcp-plugin"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "unreal-mcp@unreal-mcp-local": true
+  }
 }
 ```
 
-Or in a Claude Code session, run:
-
-```
-/install-plugin /path/to/unreal-mcp-plugin
-```
+The marketplace name (`unreal-mcp-local`) is the key under `extraKnownMarketplaces` and is whatever you choose; the plugin reference in `enabledPlugins` must use that same name after the `@`.
 
 ## Verification
 
-1. Launch Unreal Editor, open **Tools > Claude Code** to start the MCP server
-2. Check the Output Log for MCP server startup messages
-3. In Claude Code, run `/mcp`. You should see `unreal-mcp` listed as a connected server
-4. Try: "List all actors in the current level"
+1. Launch Unreal Editor, open **Tools > Claude Code** to start the MCP server.
+2. Check the Output Log for MCP server startup messages.
+3. In Claude Code, run `/plugin`. The **Installed** tab should list `unreal-mcp` as enabled. This confirms the plugin itself (skills, hooks) is loaded.
+4. Run `/mcp`. You should see `unreal-mcp` listed as a connected server. This confirms the plugin's MCP server is reachable.
+5. Try: "List all actors in the current level".
 
 ## Configuration
 
