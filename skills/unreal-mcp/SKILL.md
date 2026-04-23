@@ -71,7 +71,7 @@ Adjust the port and path if non-default values are configured. Once the editor i
 ## Safety
 
 - **Save before bulk operations.** MCP tools modify editor state directly. Save before and after large changes.
-- **Wait for compilation.** Don't issue tool calls while C++ or shader compilation is in progress.
+- **Wait for compilation.** Don't issue tool calls while C++ or shader compilation is in progress. Prefer `LiveCodingToolset.CompileLiveCoding` to rebuild C++ from the running editor instead of asking the user to build from the IDE.
 - **PIE context.** Some editor-only tools (e.g., asset creation) may behave differently during Play-in-Editor.
 - **Sequential execution.** Tool calls execute on the game thread. Don't issue them in parallel.
 - **Check results.** Operations like Blueprint compilation can fail. Always check the result before proceeding.
@@ -158,6 +158,14 @@ Adjust the port and path if non-default values are configured. Once the editor i
 
 1. `ProgrammaticToolset.get_execution_environment` to learn the API (call once per session)
 2. `ProgrammaticToolset.execute_tool_script` to run a Python script that calls multiple tools in one round-trip
+
+### Live Coding (C++ Iteration)
+
+1. Edit the relevant C++ source files.
+2. `LiveCodingToolset.CompileLiveCoding` to trigger an in-editor Live Coding compile (waits for completion).
+3. Inspect the returned status and any MSVC diagnostics; fix and re-invoke as needed.
+
+Requires Live Coding to be enabled in Editor Preferences and for the current session.
 
 ## Toolset Reference
 

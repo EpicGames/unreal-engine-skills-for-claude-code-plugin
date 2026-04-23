@@ -94,6 +94,8 @@ Tool names mix `camelCase`, `PascalCase`, and `snake_case` across toolsets becau
 
 **AutomationTestToolset** runs C++ automation tests from the editor: discover available tests, list tests by name or tag filter, run specific tests by path, check status, get detailed per-test results (duration, errors, warnings), and stop running tests. Requires calling `DiscoverTests` once before using other test tools.
 
+**LiveCodingToolset** triggers an in-editor Live Coding compile and waits for completion, returning the compile result (`Success`, `NoChanges`, `Failure`, etc.) together with captured `LogLiveCoding` output and any MSVC diagnostics extracted from the UBT log. Live Coding must be enabled in Editor Preferences and for the session. Use this instead of asking the user to rebuild from the IDE when iterating on C++ changes.
+
 **AgentSkillToolset** manages Agent Skills: list, get details, create, and update skill assets.
 
 **AIAssistantToolset** returns docked editor context and project context for AI assistant widgets docked in asset editors.
