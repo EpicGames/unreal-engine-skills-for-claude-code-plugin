@@ -1,0 +1,4 @@
+# Skill-creator evaluation workspace artifacts.
+# Generated when running the description-optimization loop or eval runs
+# from the skill-creator skill against any skill in this repo.
+skills/*-workspace/

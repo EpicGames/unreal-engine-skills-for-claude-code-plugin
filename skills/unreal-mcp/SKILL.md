@@ -1,201 +1,136 @@
 ---
 name: unreal-mcp
-description: "Control Unreal Editor via MCP: create actors, edit Blueprints, manipulate widgets, materials, Niagara, Control Rigs, Sequencer, run automation tests, and more. Use this skill whenever the user mentions Unreal Engine, UE5/UE4, `.uproject`, the Unreal Editor, Blueprints, UMG, Niagara, Sequencer, Control Rigs, State Trees, or asks to spawn, place, or edit actors, assets, or widgets in an Unreal project, even if they don't explicitly name the skill."
+description: "Use this skill to perform actions inside an Unreal Engine project via a live-editor MCP connection. Trigger when the user wants to change, query, or run something in their UE4/UE5 project — not for conceptual or docs questions. Concrete triggers: spawn/move/duplicate/transform actors in a level, open a `.uproject`, add things around a PlayerStart, create or edit a Blueprint/Widget/Material/Niagara/Control Rig/Sequencer/Behavior Tree/GAS ability, read or write properties on actors (e.g. `bIsLocked` on `BP_DoorActor`), Live Coding recompile after editing C++ (`AActor`, `UMyComponent::Method`, `UPROPERTY`), or modify Static/Skeletal Mesh assets. Treat as Unreal context even without the word \"Unreal\": asset prefixes `BP_`, `WBP_`, `M_`, `MI_`, `NS_`, `CR_`, `SK_`, `SM_`, `ABP_`; UE C++ types/macros; `.uproject`; Content Browser; Outliner; PlayerStart; \"in my game\" plus UE signals. Skip for: pure conceptual/docs questions, Unity, Godot, or unrelated uses of \"blueprint\"/\"sequencer\"/\"widget\"."
 ---
 
 # Unreal MCP
 
-Unreal MCP exposes hundreds of tools from the Unreal Editor through an MCP server. Tools are registered via **EDA's ToolsetRegistry** and bridged to MCP automatically. When the editor is running, all registered toolsets are available via the `unreal-mcp` MCP server.
+You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The server exposes hundreds of tools across 30+ toolsets — actors, blueprints, materials, Niagara, Sequencer, Control Rigs, GAS, automation tests, Live Coding, and more — registered through EDA's `ToolsetRegistry`. Use it to inspect and mutate live editor state instead of telling the user to do it manually.
 
-All tools are auto-discovered via MCP. You do not need to memorize tool names. They appear in Claude Code's tool list when the editor is connected.
+You don't need to memorize tool names. The flow below has you discover them on demand.
 
-When **deferred tool loading** is enabled (the default), `tools/list` returns three lightweight tools (`list_toolsets`, `describe_toolset`, and `load_toolset`) instead of the full set of tool schemas. This keeps the initial context window small. Use `list_toolsets` to discover available toolsets, `describe_toolset` to inspect a toolset's tools and schemas, and `load_toolset` to register a toolset's tools as native MCP tools. Deferred loading can be toggled with the `ModelContextProtocol.DeferredToolLoading` console variable.
+## First step every time: load the toolsets you need
 
-## Prerequisites
+Deferred tool loading is on by default, so the MCP server initially advertises only three discovery tools: `list_toolsets`, `describe_toolset`, and `load_toolset`. Tool names like `BlueprintTools.create` or `SequencerTools.create_level_sequence` are **not visible** until you load their owning toolset. This is deliberate — it keeps your context window small.
 
-- Unreal Editor running with the **ModelContextProtocol** plugin enabled
-- MCP server active (check Output Log for startup messages)
+When you start work:
 
-Port, URL path, and auto-start defaults are documented user-side in the repo `README.md` under `Configuration`. The model should not assume a fixed endpoint; the connected MCP server is whatever Claude Code has registered as `unreal-mcp`.
+1. If you already know which toolset you need (the user said "make a Blueprint" → `BlueprintTools`), call `load_toolset` directly and skip ahead.
+2. Otherwise call `list_toolsets` to see what's registered, then `describe_toolset` on the candidates to read their tool schemas.
+3. Once `load_toolset` succeeds, the toolset's tools become native MCP tools you can invoke directly.
 
-## First-Time Setup
+If you don't know which toolset owns a capability, consult `references/toolsets.md` — it lists every registered toolset with a one-paragraph capability summary. Read it once, then load only what you need.
 
-If the MCP server is not yet connected, Claude Code can help the user get set up. The steps below can be performed directly by Claude Code when the user asks for help connecting.
+If the discovery tools themselves aren't available — `list_toolsets` errors, or you don't see `unreal-mcp` in your MCP server list at all — the editor or its MCP server is not running. Don't bluff. Ask the user to launch the editor (and open **Tools > Claude Code** if auto-start isn't on), or follow `references/setup.md` to wire up a project that has never been configured.
 
-### 1. Enable plugins in the `.uproject` file
+## Safety rules
 
-The project's `.uproject` file must list the `ModelContextProtocol` plugin as enabled. Search the `Plugins` array for an existing entry; if missing, add it:
+These exist because every MCP call mutates live editor state and runs on the game thread. Treat them as hard constraints, not suggestions.
 
-```json
-{
-  "Name": "ModelContextProtocol",
-  "Enabled": true
-}
-```
-
-### 2. Enable auto-start via `.ini`
-
-To start the MCP server automatically on editor launch (without requiring the user to open Tools > Claude Code), add the following to the project's `Config/DefaultEditorPerProjectUserSettings.ini`:
-
-```ini
-[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]
-bAutoStartServer=True
-```
-
-The port and URL path can also be set here if the defaults need to change:
-
-```ini
-ServerPortNumber=8000
-ServerUrlPath=/mcp
-```
-
-Alternatively, auto-start can be triggered via the command line flag `-StartModelContextProtocolServer`, and the port can be overridden with `-ModelContextProtocolPort=<port>`.
-
-### 3. Generate the `.mcp.json` file
-
-The `.mcp.json` file tells Claude Code where the MCP server is. The editor is the canonical source: on startup it regenerates `.mcp.json` from the live port and URL settings, overwriting any hand-written copy. Only write `.mcp.json` directly when the file is absent and the editor is not about to launch (for example, when scripting a fresh-project bootstrap before the user opens the editor). Otherwise, prefer launching the editor and letting it generate the file. Write this to `.mcp.json` in the project root (the directory containing the `.uproject` file):
-
-```json
-{
-  "mcpServers": {
-    "unreal-mcp": {
-      "type": "http",
-      "url": "http://127.0.0.1:8000/mcp"
-    }
-  }
-}
-```
-
-Adjust the port and path if non-default values are configured. Once the editor is running, `ModelContextProtocol.GenerateClientConfig All` regenerates config files from the current settings. The command accepts a specific client argument: `ClaudeCode`, `Cursor`, `VSCode`, `Gemini`, `Codex`, or `All`.
-
-## Safety
-
-- **Save before bulk operations.** MCP tools modify editor state directly. Save before and after large changes.
-- **Wait for compilation.** Don't issue tool calls while C++ or shader compilation is in progress. Prefer `LiveCodingToolset.CompileLiveCoding` to rebuild C++ from the running editor instead of asking the user to build from the IDE.
-- **PIE context.** Some editor-only tools (e.g., asset creation) may behave differently during Play-in-Editor.
-- **Sequential execution.** Tool calls execute on the game thread. Don't issue them in parallel.
-- **Check results.** Operations like Blueprint compilation can fail. Always check the result before proceeding.
+- **Save first, then save again.** Tell the user to save the project (or call `AssetTools` save APIs) before any bulk change, and again after. MCP edits are not always undoable, especially across compilation boundaries. Treat anything that touches multiple assets as a destructive operation that needs a recovery point.
+- **Wait for compilation.** If C++ or shader compilation is in flight, your tool calls will hang or fail in confusing ways. To rebuild C++ from the running editor, drive `LiveCodingToolset.CompileLiveCoding` and wait on its result instead of asking the user to switch to the IDE — that tool blocks until the compile actually finishes and surfaces MSVC diagnostics.
+- **Sequential, never parallel.** Tool calls execute on the game thread, so issuing them in parallel deadlocks or fails. Even when calls look independent, serialize them.
+- **Always check the result.** Blueprint compilation, widget creation, material edits — many tools return a status that flips between success and failure with no exception thrown on the wire. Read the response before moving on. Treat anything that isn't an explicit success as a stop.
+- **Mind PIE.** Editor-only tools (asset creation in particular) behave differently while Play-in-Editor is active. If a result looks wrong, check whether PIE is running and stop it if so.
 
 ## Workflows
 
-### Automation Testing
+These are the canonical step sequences for common tasks. Tool names are listed by `Toolset.tool` so you can `load_toolset` the right thing first. Order matters — many later steps assume earlier ones have run.
 
-1. `AutomationTestToolset.DiscoverTests` to initialize test discovery (call once before other test tools)
-2. `AutomationTestToolset.ListTests` to find tests by name or tag substring
-3. `AutomationTestToolset.RunTests` to execute specific tests by full path
-4. `AutomationTestToolset.GetTestStatus` for a lightweight progress snapshot
-5. `AutomationTestToolset.GetTestResults` for detailed per-test results, errors, and warnings
-6. `AutomationTestToolset.StopTests` to cancel running tests
+### Inspect a level
 
-### Sequencer (Level Sequences)
+1. `SceneTools.find_actors` to enumerate actors by name or class.
+2. `ObjectTools.list_properties` then `ObjectTools.get_properties` to read a specific actor's state.
+3. `EditorAppToolset.CaptureAssetImage` for a viewport screenshot — pass the current level path as `assetPath`.
 
-1. `SequencerTools.create_level_sequence` to create a new sequence asset
-2. `SequencerTools.open_sequence` to open it in the Sequencer editor
-3. `SequencerTools.add_actors_by_name` to bind level actors into the sequence
-4. `SequencerTools.add_track_to_binding` to add tracks (transform, animation, etc.)
-5. `SequencerTools.add_section` to add sections to tracks
-6. `SequencerTools.add_key_float` / `add_key_bool` / `add_key_integer` to keyframe values
-7. `SequencerTools.set_playback_range` to set the sequence duration
-8. `SequencerTools.create_camera` to add a cine camera
-9. `SequencerTools.set_playhead_frame` to scrub to a frame
-10. `SequencerTools.play` / `pause` for playback control
+### Create and place an actor
 
-### Inspect a Level
+1. `SceneTools.add_to_scene_from_asset` (when you have an asset path) or `add_to_scene_from_class` (for a class).
+2. `ActorTools.set_actor_transform` to position, rotate, and scale.
+3. `ObjectTools.set_properties` to configure exposed properties.
+4. `EditorAppToolset.FocusOnActors` to bring the viewport to the new actor.
 
-1. `SceneTools.find_actors` to list actors in the level
-2. `ObjectTools.list_properties` then `ObjectTools.get_properties` to inspect a specific actor
-3. `EditorAppToolset.CaptureAssetImage` to screenshot the viewport (pass the current level path as `assetPath`)
+### Blueprint authoring
 
-### Create and Place Objects
+1. `BlueprintTools.create` with the parent class.
+2. `ActorTools.add_component` for any components the Blueprint needs.
+3. `ObjectTools.set_properties` to configure the components.
+4. `BlueprintTools.add_variable` for member variables.
+5. `BlueprintTools.get_graph` to fetch the EventGraph.
+6. `BlueprintTools.create_node` to add nodes, then `BlueprintTools.connect_pins` to wire them.
+7. `BlueprintTools.compile_blueprint` to compile. If it fails, read the diagnostic and fix before doing anything else.
 
-1. `SceneTools.add_to_scene_from_asset` or `add_to_scene_from_class` to spawn an actor
-2. `ActorTools.set_actor_transform` to position it
-3. `ObjectTools.set_properties` to configure properties
-4. `EditorAppToolset.FocusOnActors` to center the viewport on it
+### Widget / UMG authoring
 
-### Blueprint Creation
-
-1. `BlueprintTools.create` with a parent class
-2. `ActorTools.add_component` to add components
-3. `ObjectTools.set_properties` to configure component properties
-4. `BlueprintTools.add_variable` to add member variables
-5. `BlueprintTools.get_graph` to get the EventGraph
-6. `BlueprintTools.create_node` to add nodes
-7. `BlueprintTools.connect_pins` to wire pins together
-8. `BlueprintTools.compile_blueprint` to compile and check for errors
+1. `UMGToolSet.CreateWidgetBlueprint` for a new Widget Blueprint.
+2. `UMGToolSet.AddWidget` to add text, buttons, images, and other UI elements.
+3. `ObjectTools.set_properties` for widget and slot properties.
+4. `UMGToolSet.CompileWidgetBlueprint`. As with Blueprints, do not proceed past a failed compile.
 
 ### Material Instances
 
-1. `MaterialInstanceTools.create` with an existing parent material
-2. `MaterialInstanceTools.list_parameters` to see what parameters are exposed
-3. `MaterialInstanceTools.set_scalar_parameter` / `set_vector_parameter` / `set_texture_parameter` to configure values
-4. Assign the instance to meshes via `ObjectTools.set_properties`
+1. `MaterialInstanceTools.create` against an existing parent material.
+2. `MaterialInstanceTools.list_parameters` to see what is exposed.
+3. `MaterialInstanceTools.set_scalar_parameter` / `set_vector_parameter` / `set_texture_parameter` for the values you want.
+4. Assign the instance to meshes via `ObjectTools.set_properties`.
 
-### Widget/UI Creation
+### Niagara particle systems
 
-1. `UMGToolSet.CreateWidgetBlueprint` to create a Widget Blueprint
-2. `UMGToolSet.AddWidget` to add UI elements (text, buttons, images)
-3. `ObjectTools.set_properties` to configure widget and slot properties
-4. `UMGToolSet.CompileWidgetBlueprint` to compile
+1. `AssetTools.find_assets` under a known template root (e.g. `/Niagara`) to find a starting system.
+2. `NiagaraTools.System_CreateNiagaraSystem` from that template.
+3. `NiagaraTools.System_GetSystemTopology` to understand emitters and stages.
+4. `NiagaraTools.System_GetModuleSchema` to see the inputs available on a module.
+5. `NiagaraTools.System_SetStackInputData` to set values.
 
-### Niagara Particle Effects
+### Sequencer (Level Sequences)
 
-1. `AssetTools.find_assets` to find template Niagara systems (e.g., under `/Niagara`)
-2. `NiagaraTools.System_CreateNiagaraSystem` from a template
-3. `NiagaraTools.System_GetSystemTopology` to understand the structure
-4. `NiagaraTools.System_GetModuleSchema` to see available inputs
-5. `NiagaraTools.System_SetStackInputData` to modify parameters
+1. `SequencerTools.create_level_sequence` for a new sequence asset.
+2. `SequencerTools.open_sequence` to open it in the Sequencer editor.
+3. `SequencerTools.add_actors_by_name` to bind level actors as possessables.
+4. `SequencerTools.add_track_to_binding` for transform / animation / etc. tracks.
+5. `SequencerTools.add_section` for sections on those tracks.
+6. `SequencerTools.add_key_float` / `add_key_bool` / `add_key_integer` to keyframe values.
+7. `SequencerTools.set_playback_range` to bound the duration.
+8. `SequencerTools.create_camera` for a cine camera.
+9. `SequencerTools.set_playhead_frame` to scrub.
+10. `SequencerTools.play` / `pause` to control playback.
 
-### Slate UI Automation
+### Slate UI automation
 
-1. `SlateInspectorToolset.Snapshot` to get the widget tree
-2. `SlateInspectorToolset.Observe` to start tracking a subtree
-3. `SlateInspectorToolset.Click` / `Type` / `PressKey` to interact with widgets
-4. `SlateInspectorToolset.Screenshot` for visual verification
-5. `SlateInspectorToolset.Unobserve` to clean up when done
+1. `SlateInspectorToolset.Snapshot` to capture the widget tree.
+2. `SlateInspectorToolset.Observe` to start tracking a subtree before you interact with it.
+3. `SlateInspectorToolset.Click` / `Type` / `PressKey` to drive the UI.
+4. `SlateInspectorToolset.Screenshot` to verify visually.
+5. `SlateInspectorToolset.Unobserve` when done — leaving observers attached is wasteful.
 
-### Batch Operations
+### Automation tests
 
-1. `ProgrammaticToolset.get_execution_environment` to learn the API (call once per session)
-2. `ProgrammaticToolset.execute_tool_script` to run a Python script that calls multiple tools in one round-trip
+1. `AutomationTestToolset.DiscoverTests` once before any other test tool. Skipping this is the single most common cause of empty results.
+2. `AutomationTestToolset.ListTests` to find tests by name or tag substring.
+3. `AutomationTestToolset.RunTests` to execute by full path.
+4. `AutomationTestToolset.GetTestStatus` for a lightweight progress poll.
+5. `AutomationTestToolset.GetTestResults` for detailed errors and warnings once the run finishes.
+6. `AutomationTestToolset.StopTests` to cancel.
 
-### Live Coding (C++ Iteration)
+### Live Coding (C++ iteration)
 
-1. Edit the relevant C++ source files.
-2. `LiveCodingToolset.CompileLiveCoding` to trigger an in-editor Live Coding compile (waits for completion).
-3. Inspect the returned status and any MSVC diagnostics; fix and re-invoke as needed.
+1. Edit the relevant C++ source files in the project.
+2. `LiveCodingToolset.CompileLiveCoding` to trigger a Live Coding compile from inside the editor. The tool blocks until the compile finishes.
+3. Read the returned status (`Success`, `NoChanges`, `Failure`, …) and any captured `LogLiveCoding` / MSVC diagnostics. Fix and re-invoke if needed.
 
-Requires Live Coding to be enabled in Editor Preferences and for the current session.
+Live Coding must be enabled in Editor Preferences and active for the current session. Use this rather than asking the user to rebuild from the IDE — round-trips through the IDE are slow and break flow.
 
-## Toolset Reference
+### Batch operations
 
-For the full per-toolset reference (every registered toolset with a short description, grouped by domain), read `references/toolsets.md`. It is kept out of this file so the skill's hot-path context stays small; load it only when you need to look up a specific toolset's capabilities.
+When you need to make many tool calls in one round-trip (e.g. populating a level with dozens of actors), prefer `ProgrammaticToolset` over a long sequence of individual MCP calls.
 
-## Configuration
+1. `ProgrammaticToolset.get_execution_environment` once per session to learn the available Python modules and the calling conventions.
+2. `ProgrammaticToolset.execute_tool_script` to run a Python script that calls multiple toolset APIs inside a single editor round-trip.
 
-User-facing settings (Editor Preferences, port, URL path, auto-start) are documented in the repo `README.md` under `Configuration`. This section lists only the console surface the model may actually drive.
+This is also the right tool when a workflow doesn't fit a fixed schema — the Python environment exposes every toolset API.
 
-### Console Commands
+## Reference files
 
-| Command                                              | Description                                                                             |
-|------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `ModelContextProtocol.StartServer [port]`            | Start the MCP server (optional port override)                                           |
-| `ModelContextProtocol.StopServer`                    | Stop the MCP server                                                                     |
-| `ModelContextProtocol.RefreshTools`                  | Re-register all tools                                                                   |
-| `ModelContextProtocol.GenerateClientConfig <client>` | Generate MCP client config (`ClaudeCode`, `Cursor`, `VSCode`, `Gemini`, `Codex`, `All`) |
-
-### Console Variables
-
-| CVar                                       | Default | Description                                                                                                                                                                                                     |
-|--------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ModelContextProtocol.DeferredToolLoading` | true    | When enabled, `tools/list` returns `list_toolsets`, `describe_toolset`, and `load_toolset` instead of all tool schemas. The LLM discovers and loads specific toolsets on demand, reducing context window usage. |
-
-## Troubleshooting
-
-| Issue                | Solution                                                                                                                 |
-|----------------------|--------------------------------------------------------------------------------------------------------------------------|
-| MCP not connecting   | Ensure editor is running. Open Tools > Claude Code to trigger MCP server start. Check Output Log for errors.             |
-| Failed to listen     | Run `ModelContextProtocol.StartServer <port>` with a different port number.                                              |
-| Tools not appearing  | Run `ModelContextProtocol.RefreshTools` console command. Check that ToolsetRegistry plugins are enabled.                 |
-| Tool calls failing   | Check Output Log for error details. Ensure editor is idle (not compiling, loading).                                      |
-| Docked context empty | Claude Code tab must be docked inside an asset editor (Blueprint, Material, etc.) for `GetDockedContext` to return data. |
+- `references/toolsets.md` — every registered toolset with a one-paragraph capability summary, grouped by domain. Consult when you don't know which toolset owns a capability.
+- `references/setup.md` — first-time MCP server setup for a project that has never been configured (`.uproject` plugin entry, auto-start `.ini`, `.mcp.json` generation).
+- `references/operations.md` — console commands, CVars, and a troubleshooting matrix for when things go wrong (port collision, missing toolsets, hangs, empty docked context).
