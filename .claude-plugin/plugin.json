@@ -1,6 +1,6 @@
 {
-  "name": "unreal-mcp",
-  "version": "1.9.0",
+  "name": "unreal-engine-skills-for-claude-code",
+  "version": "2.0.0",
   "description": "Control Unreal Editor via MCP: create actors, edit Blueprints, manipulate widgets, materials, Niagara, Control Rigs, Sequencer, State Trees, automation testing, and more. Includes skills for authoring new toolsets and Agent Skills.",
   "author": {
     "name": "Thomas Mansencal",

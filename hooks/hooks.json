@@ -1,5 +1,5 @@
 {
-  "description": "Unreal MCP plugin hooks",
+  "description": "Unreal Engine Skills for Claude Code hooks",
   "hooks": {
     "SessionStart": [
       {

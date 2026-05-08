@@ -1,4 +1,4 @@
-# Unreal MCP Plugin for Claude Code
+# Unreal Engine Skills for Claude Code
 
 Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools exposed via EDA's ToolsetRegistry across 30+ toolsets: actors, blueprints, materials, Niagara, Control Rigs, Sequencer, State Trees, widgets, Gameplay Ability System, automation testing, and more.
 
@@ -29,18 +29,18 @@ The `SessionStart` hook is a bash script (`hooks/unreal-context.sh`) invoked by 
 
 ## Installation
 
-Claude Code plugins are installed via the `/plugin` slash command family, backed by marketplaces. This repo is a standalone plugin (one `.claude-plugin/plugin.json`, no `marketplace.json`), so it is installed by registering the repo directory as a marketplace, then installing the `unreal-mcp` plugin from it.
+Claude Code plugins are installed via the `/plugin` slash command family, backed by marketplaces. This repo is a standalone plugin (one `.claude-plugin/plugin.json`, no `marketplace.json`), so it is installed by registering the repo directory as a marketplace, then installing the `unreal-engine-skills-for-claude-code` plugin from it.
 
 ### Option A: Interactive, for a single developer
 
 In Claude Code:
 
 ```
-/plugin marketplace add /path/to/unreal-mcp-plugin
-/plugin install unreal-mcp@unreal-mcp-plugin
+/plugin marketplace add /path/to/unreal-engine-skills-for-claude-code
+/plugin install unreal-engine-skills-for-claude-code@unreal-engine-skills-for-claude-code
 ```
 
-The marketplace name (`unreal-mcp-plugin`) is taken from the directory name when the repo is added via `/plugin marketplace add`. If you add the repo from a differently-named directory, substitute that name in the second command.
+The marketplace name (`unreal-engine-skills-for-claude-code`) is taken from the directory name when the repo is added via `/plugin marketplace add`. If you add the repo from a differently-named directory, substitute that name in the second command.
 
 ### Option B: Project `.claude/settings.json`, for a team
 
@@ -49,26 +49,26 @@ Commit this to `.claude/settings.json` in the project that should use the plugin
 ```json
 {
   "extraKnownMarketplaces": {
-    "unreal-mcp-local": {
+    "unreal-engine-skills-local": {
       "source": {
         "source": "directory",
-        "path": "/path/to/unreal-mcp-plugin"
+        "path": "/path/to/unreal-engine-skills-for-claude-code"
       }
     }
   },
   "enabledPlugins": {
-    "unreal-mcp@unreal-mcp-local": true
+    "unreal-engine-skills-for-claude-code@unreal-engine-skills-local": true
   }
 }
 ```
 
-The marketplace name (`unreal-mcp-local`) is the key under `extraKnownMarketplaces` and is whatever you choose; the plugin reference in `enabledPlugins` must use that same name after the `@`.
+The marketplace name (`unreal-engine-skills-local`) is the key under `extraKnownMarketplaces` and is whatever you choose; the plugin reference in `enabledPlugins` must use that same name after the `@`.
 
 ## Verification
 
 1. Launch Unreal Editor, open **Tools > Claude Code** to start the MCP server.
 2. Check the Output Log for MCP server startup messages.
-3. In Claude Code, run `/plugin`. The **Installed** tab should list `unreal-mcp` as enabled. This confirms the plugin itself (skills, hooks) is loaded.
+3. In Claude Code, run `/plugin`. The **Installed** tab should list `unreal-engine-skills-for-claude-code` as enabled. This confirms the plugin itself (skills, hooks) is loaded.
 4. Run `/mcp`. You should see `unreal-mcp` listed as a connected server. This confirms the plugin's MCP server is reachable.
 5. Try: "List all actors in the current level".
 
