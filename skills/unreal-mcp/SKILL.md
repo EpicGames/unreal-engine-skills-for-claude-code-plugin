@@ -9,17 +9,17 @@ You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The
 
 You don't need to memorize tool names. The flow below has you discover them on demand.
 
-## First step every time: load the toolsets you need
+## First step every time: discover the tool you need, then dispatch it via `call_tool`
 
-Deferred tool loading is on by default, so the MCP server initially advertises only three discovery tools: `list_toolsets`, `describe_toolset`, and `load_toolset`. Tool names like `BlueprintTools.create` or `SequencerTools.create_level_sequence` are **not visible** until you load their owning toolset. This is deliberate. It keeps your context window small.
+Tool search is on by default, so the MCP server advertises only three meta-tools for the whole session: `list_toolsets`, `describe_toolset`, and `call_tool`. Tool names like `BlueprintTools.create` or `SequencerTools.create_level_sequence` are **not in `tools/list`**. They are dispatched server-side through `call_tool` and never registered as native MCP tools. This is deliberate. It keeps your context window small and the prompt cache warm.
 
 When you start work:
 
-1. If you already know which toolset you need (the user said "make a Blueprint" → `BlueprintTools`), call `load_toolset` directly and skip ahead.
-2. Otherwise call `list_toolsets` to see what's registered, then `describe_toolset` on the candidates to read their tool schemas.
-3. Once `load_toolset` succeeds, the toolset's tools become native MCP tools you can invoke directly.
+1. Call `list_toolsets` to see what's registered, then `describe_toolset` on the candidate(s) to read their tool schemas. If you already know which toolset and tool you need (the user said "make a Blueprint" → `BlueprintTools.create`), skip the listing and go straight to `describe_toolset` to confirm the signature.
+2. Invoke the tool with `call_tool`: pass `toolset_name`, `tool_name`, and an `arguments` object matching the schema you just read. The result comes back on the same turn. No extra round-trip needed.
+3. Top-level dispatch (omitting `toolset_name`) is reserved for tools registered directly on the MCP server and is rejected for `call_tool` itself.
 
-If the discovery tools themselves aren't available (`list_toolsets` errors, or you don't see `unreal-mcp` in your MCP server list at all), the editor or its MCP server is not running. Don't bluff. Ask the user to launch the editor (and run `ModelContextProtocol.StartServer` in the console if auto-start isn't on), or follow `references/setup.md` to wire up a project that has never been configured.
+If the meta-tools themselves aren't available (`list_toolsets` errors, or you don't see `unreal-mcp` in your MCP server list at all), the editor or its MCP server is not running. Don't bluff. Ask the user to launch the editor (and run `ModelContextProtocol.StartServer` in the console if auto-start isn't on), or follow `references/setup.md` to wire up a project that has never been configured.
 
 ## Safety rules
 
@@ -33,7 +33,7 @@ These exist because every MCP call mutates live editor state and runs on the gam
 
 ## Workflows
 
-These are the canonical step sequences for common tasks. Tool names are listed by `Toolset.tool` so you can `load_toolset` the right thing first. Order matters. Many later steps assume earlier ones have run.
+These are the canonical step sequences for common tasks. Tool names are listed by `Toolset.tool` so you can `describe_toolset` the right thing first and then dispatch through `call_tool`. Order matters. Many later steps assume earlier ones have run.
 
 ### Inspect a level
 

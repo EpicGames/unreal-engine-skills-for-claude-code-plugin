@@ -78,7 +78,7 @@ The default port is **8000** with URL path `/mcp`. If the port is in use, run `M
 
 > **Note:** This plugin does not ship a static `.mcp.json` file. Run `ModelContextProtocol.GenerateClientConfig ClaudeCode` in the editor console to generate it from the current server port and URL; re-run after changing either.
 
-**Deferred tool loading** is enabled by default: the MCP server exposes three lightweight discovery tools upfront instead of the full tool catalog, so Claude loads toolsets on demand and initial context stays small. Toggle with the `ModelContextProtocol.DeferredToolLoading` console variable. The model-facing usage contract (how the discovery tools are called, when loaded tools become live) lives in `skills/unreal-mcp/SKILL.md`.
+**Tool search** is enabled by default: the MCP server exposes three meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`) instead of the full tool catalog, so Claude discovers toolsets on demand, the prompt cache stays warm, and discovered tools are callable on the same turn through `call_tool`. Toggle with the `bEnableToolSearch` setting in `[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]`; when disabled, every tool is registered upfront (path used by the hash-mapping commandlet). The model-facing usage contract lives in `skills/unreal-mcp/SKILL.md`.
 
 ## Security
 

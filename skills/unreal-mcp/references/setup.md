@@ -77,7 +77,7 @@ Adjust the URL if the port or path was overridden in step 2.
 After the editor is running with the plugin enabled and auto-start on:
 
 - The Output Log shows MCP server startup messages.
-- `list_toolsets` (the deferred-loading discovery tool) returns successfully.
+- `list_toolsets` (one of the three tool-search meta-tools) returns successfully.
 - `/mcp` in Claude Code lists `unreal-mcp` as connected.
 
 If any of these fail, see `operations.md` for recovery commands.
