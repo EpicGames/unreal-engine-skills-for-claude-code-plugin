@@ -15,7 +15,7 @@ Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools expos
 ## Prerequisites
 
 1. **Unreal Editor** with the **ModelContextProtocol** plugin enabled
-2. **Editor running** - the MCP server starts automatically (or on first Claude Code tab open)
+2. **Editor running** with the MCP server started - run `ModelContextProtocol.StartServer` in the console, or enable `bAutoStartServer` per `skills/unreal-mcp/references/setup.md`
 3. **A bash shell on `PATH`** - required for the `SessionStart` hook (see **Platform Support**)
 
 ## Platform Support
