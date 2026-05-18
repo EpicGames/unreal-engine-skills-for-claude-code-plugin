@@ -5,13 +5,13 @@ description: "Use this skill to perform actions inside an Unreal Engine project 
 
 # Unreal MCP
 
-You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The server exposes hundreds of tools across 30+ toolsets — actors, blueprints, materials, Niagara, Sequencer, Control Rigs, GAS, automation tests, Live Coding, and more — registered through EDA's `ToolsetRegistry`. Use it to inspect and mutate live editor state instead of telling the user to do it manually.
+You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The server exposes hundreds of tools across 30+ toolsets (actors, blueprints, materials, Niagara, Sequencer, Control Rigs, GAS, automation tests, Live Coding, and more) registered through EDA's `ToolsetRegistry`. Use it to inspect and mutate live editor state instead of telling the user to do it manually.
 
 You don't need to memorize tool names. The flow below has you discover them on demand.
 
 ## First step every time: load the toolsets you need
 
-Deferred tool loading is on by default, so the MCP server initially advertises only three discovery tools: `list_toolsets`, `describe_toolset`, and `load_toolset`. Tool names like `BlueprintTools.create` or `SequencerTools.create_level_sequence` are **not visible** until you load their owning toolset. This is deliberate — it keeps your context window small.
+Deferred tool loading is on by default, so the MCP server initially advertises only three discovery tools: `list_toolsets`, `describe_toolset`, and `load_toolset`. Tool names like `BlueprintTools.create` or `SequencerTools.create_level_sequence` are **not visible** until you load their owning toolset. This is deliberate. It keeps your context window small.
 
 When you start work:
 
@@ -19,27 +19,27 @@ When you start work:
 2. Otherwise call `list_toolsets` to see what's registered, then `describe_toolset` on the candidates to read their tool schemas.
 3. Once `load_toolset` succeeds, the toolset's tools become native MCP tools you can invoke directly.
 
-If the discovery tools themselves aren't available — `list_toolsets` errors, or you don't see `unreal-mcp` in your MCP server list at all — the editor or its MCP server is not running. Don't bluff. Ask the user to launch the editor (and run `ModelContextProtocol.StartServer` in the console if auto-start isn't on), or follow `references/setup.md` to wire up a project that has never been configured.
+If the discovery tools themselves aren't available (`list_toolsets` errors, or you don't see `unreal-mcp` in your MCP server list at all), the editor or its MCP server is not running. Don't bluff. Ask the user to launch the editor (and run `ModelContextProtocol.StartServer` in the console if auto-start isn't on), or follow `references/setup.md` to wire up a project that has never been configured.
 
 ## Safety rules
 
 These exist because every MCP call mutates live editor state and runs on the game thread. Treat them as hard constraints, not suggestions.
 
 - **Save first, then save again.** Tell the user to save the project (or call `AssetTools` save APIs) before any bulk change, and again after. MCP edits are not always undoable, especially across compilation boundaries. Treat anything that touches multiple assets as a destructive operation that needs a recovery point.
-- **Wait for compilation.** If C++ or shader compilation is in flight, your tool calls will hang or fail in confusing ways. To rebuild C++ from the running editor, drive `LiveCodingToolset.CompileLiveCoding` and wait on its result instead of asking the user to switch to the IDE — that tool blocks until the compile actually finishes and surfaces MSVC diagnostics.
+- **Wait for compilation.** If C++ or shader compilation is in flight, your tool calls will hang or fail in confusing ways. To rebuild C++ from the running editor, drive `LiveCodingToolset.CompileLiveCoding` and wait on its result instead of asking the user to switch to the IDE. That tool blocks until the compile actually finishes and surfaces MSVC diagnostics.
 - **Sequential, never parallel.** Tool calls execute on the game thread, so issuing them in parallel deadlocks or fails. Even when calls look independent, serialize them.
-- **Always check the result.** Blueprint compilation, widget creation, material edits — many tools return a status that flips between success and failure with no exception thrown on the wire. Read the response before moving on. Treat anything that isn't an explicit success as a stop.
+- **Always check the result.** Blueprint compilation, widget creation, material edits: many tools return a status that flips between success and failure with no exception thrown on the wire. Read the response before moving on. Treat anything that isn't an explicit success as a stop.
 - **Mind PIE.** Editor-only tools (asset creation in particular) behave differently while Play-in-Editor is active. If a result looks wrong, check whether PIE is running and stop it if so.
 
 ## Workflows
 
-These are the canonical step sequences for common tasks. Tool names are listed by `Toolset.tool` so you can `load_toolset` the right thing first. Order matters — many later steps assume earlier ones have run.
+These are the canonical step sequences for common tasks. Tool names are listed by `Toolset.tool` so you can `load_toolset` the right thing first. Order matters. Many later steps assume earlier ones have run.
 
 ### Inspect a level
 
 1. `SceneTools.find_actors` to enumerate actors by name or class.
 2. `ObjectTools.list_properties` then `ObjectTools.get_properties` to read a specific actor's state.
-3. `EditorAppToolset.CaptureAssetImage` for a viewport screenshot — pass the current level path as `assetPath`.
+3. `EditorAppToolset.CaptureAssetImage` for a viewport screenshot. Pass the current level path as `assetPath`.
 
 ### Create and place an actor
 
@@ -99,7 +99,7 @@ These are the canonical step sequences for common tasks. Tool names are listed b
 2. `SlateInspectorToolset.Observe` to start tracking a subtree before you interact with it.
 3. `SlateInspectorToolset.Click` / `Type` / `PressKey` to drive the UI.
 4. `SlateInspectorToolset.Screenshot` to verify visually.
-5. `SlateInspectorToolset.Unobserve` when done — leaving observers attached is wasteful.
+5. `SlateInspectorToolset.Unobserve` when done. Leaving observers attached is wasteful.
 
 ### Automation tests
 
@@ -116,7 +116,7 @@ These are the canonical step sequences for common tasks. Tool names are listed b
 2. `LiveCodingToolset.CompileLiveCoding` to trigger a Live Coding compile from inside the editor. The tool blocks until the compile finishes.
 3. Read the returned status (`Success`, `NoChanges`, `Failure`, …) and any captured `LogLiveCoding` / MSVC diagnostics. Fix and re-invoke if needed.
 
-Live Coding must be enabled in Editor Preferences and active for the current session. Use this rather than asking the user to rebuild from the IDE — round-trips through the IDE are slow and break flow.
+Live Coding must be enabled in Editor Preferences and active for the current session. Use this rather than asking the user to rebuild from the IDE. Round-trips through the IDE are slow and break flow.
 
 ### Batch operations
 
@@ -125,14 +125,14 @@ When you need to make many tool calls in one round-trip (e.g. populating a level
 1. `ProgrammaticToolset.get_execution_environment` once per session to learn the available Python modules and the calling conventions.
 2. `ProgrammaticToolset.execute_tool_script` to run a Python script that calls multiple toolset APIs inside a single editor round-trip.
 
-This is also the right tool when a workflow doesn't fit a fixed schema — the Python environment exposes every toolset API.
+This is also the right tool when a workflow doesn't fit a fixed schema. The Python environment exposes every toolset API.
 
 ## Reference files
 
-- `references/setup.md` — first-time MCP server setup for a project that has never been configured (`.uproject` plugin entry, auto-start `.ini`, `.mcp.json` generation).
-- `references/operations.md` — console commands, settings, and a troubleshooting matrix for when things go wrong (port collision, missing toolsets, hangs, empty docked context).
+- `references/setup.md`: first-time MCP server setup for a project that has never been configured (`.uproject` plugin entry, auto-start `.ini`, `.mcp.json` generation).
+- `references/operations.md`: console commands, settings, and a troubleshooting matrix for when things go wrong (port collision, missing toolsets, hangs, empty docked context).
 
 ## Companion skills
 
-- **`create-toolset`** — use when authoring a new toolset or adding tools to an existing one. Covers design principles, C++ and Python conventions, registration, error handling, and testing.
-- **`unreal-skill`** — use when creating, updating, or reviewing an Agent Skill. Covers what makes a good skill and how to structure one.
+- **`create-toolset`**: use when authoring a new toolset or adding tools to an existing one. Covers design principles, C++ and Python conventions, registration, error handling, and testing.
+- **`unreal-skill`**: use when creating, updating, or reviewing an Agent Skill. Covers what makes a good skill and how to structure one.

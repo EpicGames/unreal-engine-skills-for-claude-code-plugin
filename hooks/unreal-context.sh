@@ -74,7 +74,7 @@ context="$context Use the \`unreal-mcp\` skill for tasks that involve driving th
 if [ "$mcp_config_present" = "true" ]; then
   context="$context An \`.mcp.json\` is already present at the project root."
 else
-  context="$context No \`.mcp.json\` is present at the project root yet; the editor will generate one at startup."
+  context="$context No \`.mcp.json\` is present at the project root yet. Run \`ModelContextProtocol.GenerateClientConfig ClaudeCode\` in the editor console to generate one."
 fi
 
 # JSON-escape the dynamic content: backslash first, then double quote.

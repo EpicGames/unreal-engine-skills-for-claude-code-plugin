@@ -7,7 +7,7 @@ The goal is three things:
 2. Make the editor auto-start the MCP server on launch.
 3. Generate the `.mcp.json` Claude Code reads to connect.
 
-Walk the user through them in order. Do not skip the user's `.uproject` edit silently — confirm the file path first.
+Walk the user through them in order. Do not skip the user's `.uproject` edit silently. Confirm the file path first.
 
 ## 1. Enable the plugin in the `.uproject`
 
@@ -24,7 +24,13 @@ If the array doesn't exist, create it. If a `ModelContextProtocol` entry exists 
 
 ## 2. Enable auto-start
 
-The default is for the MCP server to stay stopped. To start it manually in a session, run `ModelContextProtocol.StartServer` from the editor console. To start it automatically on every editor launch, write the following to `Config/DefaultEditorPerProjectUserSettings.ini` in the project:
+The default is for the MCP server to stay stopped. To start it manually in a session, run `ModelContextProtocol.StartServer` from the editor console.
+
+To start it automatically on every editor launch, add the snippet below to the per-user editor config file:
+
+`<Project>/Saved/Config/<Platform>Editor/EditorPerProjectUserSettings.ini`
+
+This is the file the editor writes when you toggle the setting in Editor Preferences. It is per-user and not source-controlled.
 
 ```ini
 [/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]
