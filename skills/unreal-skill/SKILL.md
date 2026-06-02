@@ -1,11 +1,11 @@
 ---
 name: unreal-skill
-description: "Use this skill when creating, editing, or reviewing an Unreal Engine Agent Skill, a named bundle of instructions and toolset references registered with the unreal-mcp server (distinct from Claude Code's harness skills under `.claude/skills/`). Trigger when the user wants to add or change a skill that the in-editor agent will load. Concrete triggers: 'create a new Agent Skill', 'add a skill for X workflow', 'edit/update this skill', 'review my skill', 'make a Python skill class', 'create a skill UAsset', 'register a skill so Claude picks it up'; writing or editing a `SKILL.md` inside a UE plugin's `Skills/` or `Python/skills/` folder; defining a Python skill class registered with the skill registry; calling `CreateSkill`, `ListSkills`, or `GetSkills` MCP tools; designing a skill's name, description, or instruction body. SKIP for: authoring a toolset (use create-toolset), invoking an existing skill at runtime (use unreal-mcp), editing harness-level Claude Code skills under `.claude/skills/` or `~/.claude/skills/`, or generic uses of the word 'skill'."
+description: "Use this skill when creating, editing, or reviewing an Unreal Engine Agent Skill, a named bundle of instructions registered with the unreal-mcp server (distinct from Claude Code's harness skills under `.claude/skills/`). Trigger when the user wants to add or change a skill that the in-editor agent will load. Concrete triggers: 'create a new Agent Skill', 'add a skill for X workflow', 'edit/update this skill', 'review my skill', 'make a Python skill class', 'create a skill UAsset', 'register a skill so Claude picks it up'; writing or editing a `SKILL.md` inside a UE plugin's `Skills/` or `Python/skills/` folder; defining a Python skill class registered with the skill registry; calling `CreateSkill`, `ListSkills`, or `GetSkills` MCP tools; designing a skill's name, description, or instruction body. SKIP for: authoring a toolset (use create-toolset), invoking an existing skill at runtime (use unreal-mcp), editing harness-level Claude Code skills under `.claude/skills/` or `~/.claude/skills/`, or generic uses of the word 'skill'."
 ---
 
 # Unreal Skill
 
-You are authoring an Unreal Engine Agent Skill: a named, reusable bundle of instructions and toolset references that packages essential knowledge the agent either doesn't know or needs to pay close attention to. A skill can provide general best practices in a domain, guidance on a specific workflow, or a mix of both.
+You are authoring an Unreal Engine Agent Skill: a named, reusable bundle of instructions that packages essential knowledge the agent either doesn't know or needs to pay close attention to. A skill can provide general best practices in a domain, guidance on a specific workflow, or a mix of both.
 
 ## Principles
 
@@ -36,13 +36,13 @@ Work through these questions before writing anything.
 
 ## Structure
 
-Every Unreal skill has three fields.
+Every Unreal skill has two fields.
 
 **Description**: Loaded at discovery time, before the skill's full instructions are read. One or two sentences that clearly describe what the skill covers and when it applies.
 
 **Instructions**: The skill's payload. The actual guidance the agent follows when the skill is active. Apply the principles above: focus on what tools can't teach and cut anything not essential.
 
-**Toolsets**: Only list toolsets the skill genuinely depends on. Every toolset listed adds to the agent's loaded context.
+The agent discovers and dispatches tools at runtime through the unreal-mcp meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`), so write instructions that assume the agent will find the tools it needs rather than naming a fixed toolset list.
 
 ## Python Skills
 
@@ -50,16 +50,14 @@ A Python skill is a `UAgentSkill` subclass defined in a Python file inside a plu
 
 ### Authoring
 
-Decorate the class with `@agent_skill` and inherit from `unreal.AgentSkill`. The three fields from the Structure section map to class attributes:
+Decorate the class with `@agent_skill` and inherit from `unreal.AgentSkill`. The two fields from the Structure section map to class attributes:
 
 - The class docstring becomes the `Description`. Keep it to one or two sentences.
 - `instructions` is a class attribute string containing the guidance loaded when the skill activates.
-- `toolsets` is a class attribute list of `ToolsetDefinition` classes the skill depends on.
 
 ```python
 import unreal
 
-from my_plugin.toolsets.my_toolset import MyToolset
 from toolset_registry.agent_skill import agent_skill
 
 _INSTRUCTIONS = (
@@ -73,7 +71,6 @@ class MySkill(unreal.AgentSkill):
     Apply this skill whenever the user wants to accomplish X."""
 
     instructions = _INSTRUCTIONS
-    toolsets = [MyToolset]
 ```
 
 ### Registration
@@ -100,7 +97,7 @@ Use `AgentSkillToolset` via MCP. Start by calling `ListSkills` to see what exist
 - `FolderPath`: Content Browser folder, e.g. `/Game/Skills/`
 - `AssetName`: PascalCase name, e.g. `MyWorkflowSkill`
 - `Description`: one or two sentences (see Structure above)
-- `Details`: a `FAgentSkillDetails` with `Instructions` and `Toolsets` (as full class path strings)
+- `Details`: a `FAgentSkillDetails` with `Instructions`
 
 **Updating**: Call `UpdateSkill` with:
 - `SkillPath`: full path to the skill, e.g. `/Game/Skills/MyWorkflowSkill.MyWorkflowSkill_C`
@@ -113,4 +110,3 @@ Before handing off, verify the skill looks right by calling `GetSkills` on its p
 
 - **Description**: Does it clearly say when this skill applies? Would an agent reading only the description know whether to activate it for a given task?
 - **Instructions**: Do they teach something the agent couldn't learn from the tools? Are they brief enough to be worth the context cost?
-- **Toolsets**: Is every listed toolset actually used in the workflow the instructions describe? Are any missing?

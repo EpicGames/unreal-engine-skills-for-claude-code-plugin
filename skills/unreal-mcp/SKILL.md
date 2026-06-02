@@ -15,7 +15,7 @@ Tool search is on by default, so the MCP server advertises only three meta-tools
 
 When you start work:
 
-1. Call `list_toolsets` to see what's registered, then `describe_toolset` on the candidate(s) to read their tool schemas. If you already know which toolset and tool you need (the user said "make a Blueprint" → `BlueprintTools.create`), skip the listing and go straight to `describe_toolset` to confirm the signature.
+1. Call `list_toolsets` to see what's registered, then `describe_toolset` on the candidate(s) to read their tool schemas. If you already know which toolset you need (the user said "make a Blueprint" → the Blueprint toolset), skip the listing and go straight to `describe_toolset` to confirm the available tools and their signatures.
 2. Invoke the tool with `call_tool`: pass `toolset_name`, `tool_name`, and an `arguments` object matching the schema you just read. The result comes back on the same turn. No extra round-trip needed.
 3. Top-level dispatch (omitting `toolset_name`) is reserved for tools registered directly on the MCP server and is rejected for `call_tool` itself.
 
@@ -31,101 +31,17 @@ These exist because every MCP call mutates live editor state and runs on the gam
 - **Always check the result.** Blueprint compilation, widget creation, material edits: many tools return a status that flips between success and failure with no exception thrown on the wire. Read the response before moving on. Treat anything that isn't an explicit success as a stop.
 - **Mind PIE.** Editor-only tools (asset creation in particular) behave differently while Play-in-Editor is active. If a result looks wrong, check whether PIE is running and stop it if so.
 
-## Workflows
+## Project skills
 
-These are the canonical step sequences for common tasks. Tool names are listed by `Toolset.tool` so you can `describe_toolset` the right thing first and then dispatch through `call_tool`. Order matters. Many later steps assume earlier ones have run.
+A project or plugin can register **Agent Skills**: named bundles of instructions that capture workflow knowledge the agent wouldn't otherwise have (a project's naming conventions, folder layout, required setup steps, or the canonical sequence for a multi-step task). These are separate from the toolsets themselves and are reached through the agent skill toolset (`AgentSkillToolset`), not through `list_toolsets`.
 
-### Inspect a level
+Check for them the same way you discover tools, and do it whenever you start unfamiliar work in a project rather than just once:
 
-1. `SceneTools.find_actors` to enumerate actors by name or class.
-2. `ObjectTools.list_properties` then `ObjectTools.get_properties` to read a specific actor's state.
-3. `EditorAppToolset.CaptureAssetImage` for a viewport screenshot. Pass the current level path as `assetPath`.
+1. Call `AgentSkillToolset.ListSkills` (through `call_tool`) to see what skills the project registers. Each entry carries a short description of what it covers and when it applies.
+2. If a skill's description looks relevant to what the user asked, call `AgentSkillToolset.GetSkills` on it to load the full instructions, then follow them.
+3. If nothing matches, fall back to the tool-discovery flow above.
 
-### Create and place an actor
-
-1. `SceneTools.add_to_scene_from_asset` (when you have an asset path) or `add_to_scene_from_class` (for a class).
-2. `ActorTools.set_actor_transform` to position, rotate, and scale.
-3. `ObjectTools.set_properties` to configure exposed properties.
-4. `EditorAppToolset.FocusOnActors` to bring the viewport to the new actor.
-
-### Blueprint authoring
-
-1. `BlueprintTools.create` with the parent class.
-2. `ActorTools.add_component` for any components the Blueprint needs.
-3. `ObjectTools.set_properties` to configure the components.
-4. `BlueprintTools.add_variable` for member variables.
-5. `BlueprintTools.get_graph` to fetch the EventGraph.
-6. `BlueprintTools.create_node` to add nodes, then `BlueprintTools.connect_pins` to wire them.
-7. `BlueprintTools.compile_blueprint` to compile. If it fails, read the diagnostic and fix before doing anything else.
-
-### Widget / UMG authoring
-
-1. `UMGToolSet.CreateWidgetBlueprint` for a new Widget Blueprint.
-2. `UMGToolSet.AddWidget` to add text, buttons, images, and other UI elements.
-3. `ObjectTools.set_properties` for widget and slot properties.
-4. `UMGToolSet.CompileWidgetBlueprint`. As with Blueprints, do not proceed past a failed compile.
-
-### Material Instances
-
-1. `MaterialInstanceTools.create` against an existing parent material.
-2. `MaterialInstanceTools.list_parameters` to see what is exposed.
-3. `MaterialInstanceTools.set_scalar_parameter` / `set_vector_parameter` / `set_texture_parameter` for the values you want.
-4. Assign the instance to meshes via `ObjectTools.set_properties`.
-
-### Niagara particle systems
-
-1. `AssetTools.find_assets` under a known template root (e.g. `/Niagara`) to find a starting system.
-2. `NiagaraTools.System_CreateNiagaraSystem` from that template.
-3. `NiagaraTools.System_GetSystemTopology` to understand emitters and stages.
-4. `NiagaraTools.System_GetModuleSchema` to see the inputs available on a module.
-5. `NiagaraTools.System_SetStackInputData` to set values.
-
-### Sequencer (Level Sequences)
-
-1. `SequencerTools.create_level_sequence` for a new sequence asset.
-2. `SequencerTools.open_sequence` to open it in the Sequencer editor.
-3. `SequencerTools.add_actors_by_name` to bind level actors as possessables.
-4. `SequencerTools.add_track_to_binding` for transform / animation / etc. tracks.
-5. `SequencerTools.add_section` for sections on those tracks.
-6. `SequencerTools.add_key_float` / `add_key_bool` / `add_key_integer` to keyframe values.
-7. `SequencerTools.set_playback_range` to bound the duration.
-8. `SequencerTools.create_camera` for a cine camera.
-9. `SequencerTools.set_playhead_frame` to scrub.
-10. `SequencerTools.play` / `pause` to control playback.
-
-### Slate UI automation
-
-1. `SlateInspectorToolset.Snapshot` to capture the widget tree.
-2. `SlateInspectorToolset.Observe` to start tracking a subtree before you interact with it.
-3. `SlateInspectorToolset.Click` / `Type` / `PressKey` to drive the UI.
-4. `SlateInspectorToolset.Screenshot` to verify visually.
-5. `SlateInspectorToolset.Unobserve` when done. Leaving observers attached is wasteful.
-
-### Automation tests
-
-1. `AutomationTestToolset.DiscoverTests` once before any other test tool. Skipping this is the single most common cause of empty results.
-2. `AutomationTestToolset.ListTests` to find tests by name or tag substring.
-3. `AutomationTestToolset.RunTests` to execute by full path.
-4. `AutomationTestToolset.GetTestStatus` for a lightweight progress poll.
-5. `AutomationTestToolset.GetTestResults` for detailed errors and warnings once the run finishes.
-6. `AutomationTestToolset.StopTests` to cancel.
-
-### Live Coding (C++ iteration)
-
-1. Edit the relevant C++ source files in the project.
-2. `LiveCodingToolset.CompileLiveCoding` to trigger a Live Coding compile from inside the editor. The tool blocks until the compile finishes.
-3. Read the returned status (`Success`, `NoChanges`, `Failure`, …) and any captured `LogLiveCoding` / MSVC diagnostics. Fix and re-invoke if needed.
-
-Live Coding must be enabled in Editor Preferences and active for the current session. Use this rather than asking the user to rebuild from the IDE. Round-trips through the IDE are slow and break flow.
-
-### Batch operations
-
-When you need to make many tool calls in one round-trip (e.g. populating a level with dozens of actors), prefer `ProgrammaticToolset` over a long sequence of individual MCP calls.
-
-1. `ProgrammaticToolset.get_execution_environment` once per session to learn the available Python modules and the calling conventions.
-2. `ProgrammaticToolset.execute_tool_script` to run a Python script that calls multiple toolset APIs inside a single editor round-trip.
-
-This is also the right tool when a workflow doesn't fit a fixed schema. The Python environment exposes every toolset API.
+A relevant project skill's instructions take precedence over your generic defaults: it exists precisely because the project's way of doing something differs from the obvious one. (Authoring or editing these skills is a separate task covered by the `unreal-skill` companion skill below.)
 
 ## Reference files
 
