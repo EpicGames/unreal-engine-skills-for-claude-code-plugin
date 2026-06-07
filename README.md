@@ -1,6 +1,6 @@
 # Unreal Engine Skills for Claude Code
 
-Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools exposed via EDA's ToolsetRegistry across 30+ toolsets: actors, blueprints, materials, Niagara, Control Rigs, Sequencer, State Trees, widgets, Gameplay Ability System, automation testing, and more.
+Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools exposed via Unreal's ToolsetRegistry across 30+ toolsets: actors, blueprints, materials, Niagara, Control Rigs, Sequencer, State Trees, widgets, Gameplay Ability System, automation testing, and more.
 
 ## Contents
 

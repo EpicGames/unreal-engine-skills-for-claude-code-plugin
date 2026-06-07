@@ -5,7 +5,7 @@ description: "Use this skill to perform actions inside an Unreal Engine project 
 
 # Unreal MCP
 
-You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The server exposes hundreds of tools across 30+ toolsets (actors, blueprints, materials, Niagara, Sequencer, Control Rigs, GAS, automation tests, Live Coding, and more) registered through EDA's `ToolsetRegistry`. Use it to inspect and mutate live editor state instead of telling the user to do it manually.
+You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The server exposes hundreds of tools across 30+ toolsets (actors, blueprints, materials, Niagara, Sequencer, Control Rigs, GAS, automation tests, Live Coding, and more) registered through Unreal's `ToolsetRegistry`. Use it to inspect and mutate live editor state instead of telling the user to do it manually.
 
 You don't need to memorize tool names. The flow below has you discover them on demand.
 
