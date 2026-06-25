@@ -3,24 +3,32 @@
 Read this when the `unreal-mcp` MCP server is not yet wired up to a project. Skip otherwise: once the three steps below are done (with auto-start enabled in step 2), the editor starts the server on every launch and the existing `.mcp.json` keeps working.
 
 The goal is three things:
-1. Enable the `ModelContextProtocol` plugin in the project.
+1. Enable the `ModelContextProtocol` and `AllToolsets` plugins in the project.
 2. Make the editor auto-start the MCP server on launch.
 3. Generate the `.mcp.json` Claude Code reads to connect.
 
 Walk the user through them in order. Do not skip the user's `.uproject` edit silently. Confirm the file path first.
 
-## 1. Enable the plugin in the `.uproject`
+## 1. Enable the plugins in the `.uproject`
 
-Open the project's `.uproject` file. In the `Plugins` array, ensure an entry like:
+Two plugins are required. `ModelContextProtocol` is the server and transport; `AllToolsets` provides the tools. With only `ModelContextProtocol` enabled the server starts but exposes no tools.
+
+Open the project's `.uproject` file. In the `Plugins` array, ensure both entries:
 
 ```json
 {
   "Name": "ModelContextProtocol",
   "Enabled": true
+},
+{
+  "Name": "AllToolsets",
+  "Enabled": true
 }
 ```
 
-If the array doesn't exist, create it. If a `ModelContextProtocol` entry exists with `"Enabled": false`, flip it to `true`.
+If the array doesn't exist, create it. If either entry exists with `"Enabled": false`, flip it to `true`.
+
+`AllToolsets` is an editor-only aggregator with `EnabledByDefault` off, so it must be enabled explicitly. To expose only a subset of tools, enable the specific toolset plugins you want instead of `AllToolsets`.
 
 ## 2. Enable auto-start
 
