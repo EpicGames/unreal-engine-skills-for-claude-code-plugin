@@ -29,40 +29,33 @@ The `SessionStart` hook is a bash script (`hooks/unreal-context.sh`) invoked by 
 
 ## Installation
 
-Claude Code plugins are installed via the `/plugin` slash command family, backed by marketplaces. This repo is a standalone plugin (one `.claude-plugin/plugin.json`, no `marketplace.json`), so it is installed by registering the repo directory as a marketplace, then installing the `unreal-engine-skills-for-claude-code` plugin from it.
+This plugin is published in Anthropic's official Claude Code plugin marketplace, `claude-plugins-official`, which is available automatically when you start Claude Code. Browse it at [claude.com/plugins](https://claude.com/plugins) or in the **Discover** tab of the `/plugin` panel.
 
-### Option A: Interactive, for a single developer
+### Install for a single developer
 
 In Claude Code:
 
 ```
-/plugin marketplace add /path/to/unreal-engine-skills-for-claude-code
-/plugin install unreal-engine-skills-for-claude-code@unreal-engine-skills-for-claude-code
+/plugin install unreal-engine-skills-for-claude-code@claude-plugins-official
 ```
 
-The marketplace name (`unreal-engine-skills-for-claude-code`) is taken from the directory name when the repo is added via `/plugin marketplace add`. If you add the repo from a differently-named directory, substitute that name in the second command.
+If the official marketplace is not present, add it first, then run the install command above:
 
-### Option B: Project `.claude/settings.json`, for a team
+```
+/plugin marketplace add anthropics/claude-plugins-official
+```
+
+### Install for a team
 
 Commit this to `.claude/settings.json` in the project that should use the plugin. Anyone who trusts the project folder is prompted to install it automatically:
 
 ```json
 {
-  "extraKnownMarketplaces": {
-    "unreal-engine-skills-local": {
-      "source": {
-        "source": "directory",
-        "path": "/path/to/unreal-engine-skills-for-claude-code"
-      }
-    }
-  },
   "enabledPlugins": {
-    "unreal-engine-skills-for-claude-code@unreal-engine-skills-local": true
+    "unreal-engine-skills-for-claude-code@claude-plugins-official": true
   }
 }
 ```
-
-The marketplace name (`unreal-engine-skills-local`) is the key under `extraKnownMarketplaces` and is whatever you choose; the plugin reference in `enabledPlugins` must use that same name after the `@`.
 
 ## Verification
 
