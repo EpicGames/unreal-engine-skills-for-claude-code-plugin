@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "unreal-engine-skills-for-claude-code",
+  "description": "Marketplace for the Unreal Engine Skills for Claude Code plugin: control Unreal Editor directly from Claude Code via MCP.",
+  "owner": {
+    "name": "Thomas Mansencal",
+    "email": "thomas.mansencal@epicgames.com"
+  },
+  "plugins": [
+    {
+      "name": "unreal-engine-skills-for-claude-code",
+      "description": "Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools exposed via Unreal's ToolsetRegistry across 30+ toolsets: actors, blueprints, materials, Niagara, Control Rigs, Sequencer, State Trees, widgets, Gameplay Ability System, automation testing, and more.",
+      "author": {
+        "name": "Thomas Mansencal",
+        "email": "thomas.mansencal@epicgames.com"
+      },
+      "license": "MIT",
+      "source": "./"
+    }
+  ]
+}
