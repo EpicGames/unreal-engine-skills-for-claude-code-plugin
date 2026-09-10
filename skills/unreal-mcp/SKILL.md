@@ -9,6 +9,8 @@ You are wired into a live Unreal Editor through the `unreal-mcp` MCP server. The
 
 You don't need to memorize tool names. The flow below has you discover them on demand.
 
+The connection can appear as `unreal-mcp-proxy` when the engine's optional proxy is installed. Use that connection for Unreal tools. The proxy keeps Unreal's native tool definitions; it does not introduce replacement discovery or dispatch tools. See `references/setup.md` for installation.
+
 ## First step every time: discover the tool you need, then dispatch it via `call_tool`
 
 Tool search is on by default, so the MCP server advertises only three meta-tools for the whole session: `list_toolsets`, `describe_toolset`, and `call_tool`. Tool names like `BlueprintTools.create` or `SequencerTools.create_level_sequence` are **not in `tools/list`**. They are dispatched server-side through `call_tool` and never registered as native MCP tools. This is deliberate. It keeps your context window small and the prompt cache warm.
@@ -19,7 +21,7 @@ When you start work:
 2. Invoke the tool with `call_tool`: pass `toolset_name`, `tool_name`, and an `arguments` object matching the schema you just read. The result comes back on the same turn. No extra round-trip needed.
 3. Top-level dispatch (omitting `toolset_name`) is reserved for tools registered directly on the MCP server and is rejected for `call_tool` itself.
 
-If the meta-tools themselves aren't available (`list_toolsets` errors, or you don't see `unreal-mcp` in your MCP server list at all), the editor or its MCP server is not running. Don't bluff. Ask the user to launch the editor (and run `ModelContextProtocol.StartServer` in the console if auto-start isn't on), or follow `references/setup.md` to wire up a project that has never been configured.
+Missing tools do not prove that the editor is stopped. Check the configured `unreal-mcp` or `unreal-mcp-proxy` connection and follow `references/operations.md`. A proxy can stay connected while Unreal is unavailable, and a client can keep a stale catalog after recovery. `unreal_mcp_status` reports the proxy's session state, not current reachability. Verify recovery with a read-only Unreal tool call. For first-time configuration, follow `references/setup.md`.
 
 ## Safety rules
 
@@ -45,8 +47,8 @@ A relevant project skill's instructions take precedence over your generic defaul
 
 ## Reference files
 
-- `references/setup.md`: first-time MCP server setup for a project that has never been configured (`.uproject` plugin entry, auto-start `.ini`, `.mcp.json` generation).
-- `references/operations.md`: console commands, settings, and a troubleshooting matrix for when things go wrong (port collision, missing toolsets, hangs, empty docked context).
+- `references/setup.md`: first-time MCP server setup, client configuration, and optional proxy installation.
+- `references/operations.md`: console commands, settings, proxy recovery, and troubleshooting for missing tools or failed calls.
 
 ## Companion skills
 

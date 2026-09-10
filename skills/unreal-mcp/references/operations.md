@@ -27,11 +27,23 @@ Override in the same `.ini` used for `bAutoStartServer`:
 bEnableToolSearch=False
 ```
 
+## Proxy recovery
+
+With the optional proxy, the client connects to `unreal-mcp-proxy` instead of directly to `unreal-mcp`. The proxy keeps that client session open while it reconnects to Unreal. Do not replace it with a second direct connection during normal recovery.
+
+- `unreal_mcp_status` reports whether the proxy holds an initialized upstream session. It does not test current reachability.
+- Visible tools can come from a stored catalog. Verify live access with a read-only Unreal tool call.
+- With no stored catalog and no upstream session, the proxy exposes only `unreal_mcp_status`. After recovery, it sends `notifications/tools/list_changed`.
+- Clients must fetch `tools/list` again after that notification. A client that ignores it can keep the status-only catalog, or an older cached catalog. Once Unreal is reachable, use the client's reconnect or configuration-reload action if available. Otherwise, restart the client to obtain the catalog. This is a client refresh limitation, not the normal proxy recovery workflow.
+- Killing the proxy closes the client's STDIO connection. `Transport closed` then needs client reconnection; starting an unrelated proxy process cannot repair that connection. Ask before stopping active proxies.
+
+If calls still fail, check the editor's MCP startup log, the configured endpoint, and proxy stderr. With multiple editors, identify which process owns the configured port. A running editor alone does not prove that the proxy targets its MCP server. Follow the recorded `.mcp.json` entry and the engine's `Extras/Proxy/README.md` for your build's transport limits.
+
 ## Troubleshooting matrix
 
 | Symptom                                               | What to do                                                                                                                                                                                                                                                                                                          |
 |-------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `unreal-mcp` not in `/mcp`, or `list_toolsets` errors | The editor isn't running, or the MCP server isn't started. Ask the user to launch the editor and run `ModelContextProtocol.StartServer` from the console (or enable `bAutoStartServer` per `setup.md`). Then check the Output Log for startup errors.                                                               |
+| Unreal tools are missing, or `list_toolsets` errors | Check for both `unreal-mcp` and `unreal-mcp-proxy` in the client configuration. Check the editor's MCP startup log and configured endpoint. For a proxy connection, follow **Proxy recovery** above before concluding that the editor is stopped. |
 | Editor logs "Failed to listen on port"                | Another process holds the default port. Change `ServerPortNumber` in the per-user `EditorPerProjectUserSettings.ini` (see `setup.md`), or pass `-ModelContextProtocolPort=<port>` on the next launch; restart the editor, and re-run `ModelContextProtocol.GenerateClientConfig ClaudeCode` to refresh `.mcp.json`. |
 | A toolset you expect (e.g. `NiagaraTools`) is missing | Run `ModelContextProtocol.RefreshTools`. If still missing, the toolset's plugin may not be enabled in the `.uproject`. Check there.                                                                                                                                                                                 |
 | Tool calls hang or return errors                      | Editor may be busy compiling, loading a level, or in PIE. Wait and retry. For long compiles, prefer `LiveCodingToolset.CompileLiveCoding`. It returns when the compile actually finishes.                                                                                                                           |

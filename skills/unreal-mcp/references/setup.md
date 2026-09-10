@@ -1,6 +1,6 @@
 # First-Time MCP Server Setup
 
-Read this when the `unreal-mcp` MCP server is not yet wired up to a project. Skip otherwise: once the three steps below are done (with auto-start enabled in step 2), the editor starts the server on every launch and the existing `.mcp.json` keeps working.
+Read this for first-time MCP configuration or optional proxy installation. Steps 1-3 configure direct HTTP access. Step 4 adds a proxy that keeps the client session open while Unreal is unavailable.
 
 The goal is three things:
 1. Enable the `ModelContextProtocol` and `AllToolsets` plugins in the project.
@@ -80,12 +80,54 @@ The destination depends on the build kind:
 
 Adjust the URL if the port or path was overridden in step 2.
 
+## 4. Optional: install the proxy
+
+Use this option if you want the client session to survive editor shutdown and startup. The editor must still run for live tool calls.
+
+Check whether your engine includes `Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy`. If it is absent, keep the direct HTTP setup.
+
+Choose the binary for the operating system where the MCP client runs:
+
+| Platform | Binary under `Extras/Proxy` |
+|---|---|
+| Windows x64 | `Bin/Win64/unreal_mcp_proxy.exe` |
+| macOS arm64 | `Bin/Mac/unreal_mcp_proxy` |
+| Linux x64 | `Bin/Linux/unreal_mcp_proxy` |
+| Linux arm64 | `Bin/LinuxArm64/unreal_mcp_proxy` |
+
+First generate `.mcp.json` through step 3. Then run the matching command from `Extras/Proxy`, using the actual configuration path.
+
+Windows PowerShell:
+
+```powershell
+.\Bin\Win64\unreal_mcp_proxy.exe --mcp-json "C:\path\to\.mcp.json" install
+```
+
+macOS:
+
+```bash
+./Bin/Mac/unreal_mcp_proxy --mcp-json "/path/to/.mcp.json" install
+```
+
+For Linux, use `Bin/Linux` or `Bin/LinuxArm64` instead of `Bin/Mac`.
+An explicit `--mcp-json` path also supports projects outside the engine directory tree.
+
+The installer replaces the HTTP entry with a STDIO `unreal-mcp-proxy` entry. It keeps the original entry under `_upstreamEntry`. Configure one Unreal connection, not both the proxy and a duplicate direct HTTP connection.
+
+Restart the MCP client once after installation so it loads the changed configuration. Later editor shutdowns do not require stopping the proxy. If an editor integration automatically replaces `.mcp.json`, disable that integration's automatic client-configuration writes.
+
+To restore the direct HTTP entry, run the same command with `uninstall` instead of `install`. Reload the client configuration afterward.
+
+The proxy stores catalogs in the operating system's user cache directory. Scope includes configuration path, proxy path, engine build identity, and client protocol version. It does not supply a fixed Unreal tool catalog. See the engine's `Extras/Proxy/README.md` for cache behavior and transport limits in your build.
+
 ## Verifying
 
 After the editor is running with the plugin enabled and auto-start on:
 
 - The Output Log shows MCP server startup messages.
 - `list_toolsets` (one of the three tool-search meta-tools) returns successfully.
-- `/mcp` in Claude Code lists `unreal-mcp` as connected.
+- `/mcp` in Claude Code lists `unreal-mcp`, or `unreal-mcp-proxy` when installed, as connected.
+
+A connected proxy or visible cached tools do not prove that Unreal is reachable. Confirm with a successful read-only Unreal tool call.
 
 If any of these fail, see `operations.md` for recovery commands.

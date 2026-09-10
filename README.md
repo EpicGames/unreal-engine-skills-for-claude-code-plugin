@@ -15,7 +15,7 @@ Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools expos
 ## Prerequisites
 
 1. **Unreal Editor** with the **ModelContextProtocol** and **AllToolsets** plugins enabled (`AllToolsets` provides the tools; the server exposes none without it)
-2. **Editor running** with the MCP server started - run `ModelContextProtocol.StartServer` in the console, or enable `bAutoStartServer` per `skills/unreal-mcp/references/setup.md`
+2. **Editor running to execute tools**, with the MCP server started. Run `ModelContextProtocol.StartServer`, or enable `bAutoStartServer` through `skills/unreal-mcp/references/setup.md`. The optional proxy can keep the client connection open while the editor is stopped.
 3. **A bash shell on `PATH`** - required for the `SessionStart` hook (see **Platform Support**)
 
 ## Platform Support
@@ -62,7 +62,7 @@ Commit this to `.claude/settings.json` in the project that should use the plugin
 1. Launch Unreal Editor, then run `ModelContextProtocol.StartServer` in the console to start the MCP server.
 2. Check the Output Log for MCP server startup messages.
 3. In Claude Code, run `/plugin`. The **Installed** tab should list `unreal-engine-skills-for-claude-code` as enabled. This confirms the plugin itself (skills, hooks) is loaded.
-4. Run `/mcp`. You should see `unreal-mcp` listed as a connected server. This confirms the plugin's MCP server is reachable.
+4. Run `/mcp`. Check for `unreal-mcp`, or `unreal-mcp-proxy` if you installed the proxy. A connected proxy does not prove that Unreal is reachable.
 5. Try: "List all actors in the current level".
 
 ## Configuration
@@ -70,6 +70,14 @@ Commit this to `.claude/settings.json` in the project that should use the plugin
 The default port is **8000** with URL path `/mcp`. If the port is in use, run `ModelContextProtocol.StartServer <port>` in the console with a different port number.
 
 > **Note:** This plugin does not ship a static `.mcp.json` file. Run `ModelContextProtocol.GenerateClientConfig ClaudeCode` in the editor console to generate it from the current server port and URL; re-run after changing either.
+
+### Optional proxy for editor recovery
+
+If your engine build includes `Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy`, you can use its `unreal_mcp_proxy` executable.
+
+The proxy keeps the client-facing MCP session open while Unreal is unavailable and reconnects when Unreal starts again. It stores Unreal's native tool catalog as a temporary fallback. Cached tools do not prove that live calls can succeed. Without a cache, it exposes only `unreal_mcp_status` until the client fetches the recovered catalog.
+
+See [proxy setup](skills/unreal-mcp/references/setup.md#4-optional-install-the-proxy) for platform binaries and installation commands. See [proxy recovery](skills/unreal-mcp/references/operations.md#proxy-recovery) for status, cached catalogs, and connection failures.
 
 **Tool search** is enabled by default: the MCP server exposes three meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`) instead of the full tool catalog, so Claude discovers toolsets on demand, the prompt cache stays warm, and discovered tools are callable on the same turn through `call_tool`. Toggle with the `bEnableToolSearch` setting in `[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]`; when disabled, every tool is registered upfront (path used by the hash-mapping commandlet). The model-facing usage contract lives in `skills/unreal-mcp/SKILL.md`.
 
