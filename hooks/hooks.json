@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/unreal-context.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/unreal-context.sh\"",
             "timeout": 5
           }
         ]
