@@ -1,11 +1,11 @@
 # First-Time MCP Server Setup
 
-Read this for first-time MCP configuration or optional proxy installation. Steps 1-3 configure direct HTTP access. Step 4 adds a proxy that keeps the client session open while Unreal is unavailable.
+Read this for first-time MCP configuration or optional proxy installation. Steps 1-3 configure direct HTTP access and a client connection. Step 4 adds a proxy that keeps the client session open while Unreal is unavailable.
 
 The goal is three things:
 1. Enable the `ModelContextProtocol` and `AllToolsets` plugins in the project.
 2. Make the editor auto-start the MCP server on launch.
-3. Generate the `.mcp.json` Claude Code reads to connect.
+3. Connect the client: Claude Code reads a generated `.mcp.json`; OpenCode uses the repository's `opencode/` plugin or its own `opencode.json(c)`.
 
 Walk the user through them in order. Do not skip the user's `.uproject` edit silently. Confirm the file path first.
 
@@ -54,7 +54,9 @@ ServerUrlPath=/mcp
 
 A command-line alternative also works: pass `-ModelContextProtocolStartServer` (and optionally `-ModelContextProtocolPort=<port>`) to the editor. Prefer the `.ini` because it's persistent.
 
-## 3. Generate `.mcp.json`
+## 3. Connect the client
+
+### Claude Code
 
 The editor does not write `.mcp.json` on its own. Either run a console command from inside the editor, or hand-write the file.
 
@@ -80,6 +82,41 @@ The destination depends on the build kind:
 
 Adjust the URL if the port or path was overridden in step 2.
 
+### OpenCode
+
+`ModelContextProtocol.GenerateClientConfig` does not support OpenCode, and OpenCode does not read `.mcp.json`. Use one of these instead.
+
+**Plugin (preferred):** the repository's `opencode/` package registers the server, loads the skills, and injects the project context note. Add it to `plugins` in `opencode.json` or `opencode.jsonc`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["/absolute/path/to/unreal-engine-skills-for-claude-code-plugin/opencode"]
+}
+```
+
+Pass `url` in the plugin options if the endpoint differs from `http://127.0.0.1:8000/mcp`. See the repository's `opencode/README.md` for details.
+
+**Manual configuration:** add the server and the shared skills directory yourself:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "unreal-mcp": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8000/mcp",
+        "oauth": false
+      }
+    }
+  },
+  "skills": ["/absolute/path/to/unreal-engine-skills-for-claude-code-plugin/skills"]
+}
+```
+
+Adjust the URL if the port or path was overridden in step 2. Reload OpenCode after changing the configuration.
+
 ## 4. Optional: install the proxy
 
 Use this option if you want the client session to survive editor shutdown and startup. The editor must still run for live tool calls.
@@ -95,7 +132,7 @@ Choose the binary for the operating system where the MCP client runs:
 | Linux x64 | `Bin/Linux/unreal_mcp_proxy` |
 | Linux arm64 | `Bin/LinuxArm64/unreal_mcp_proxy` |
 
-First generate `.mcp.json` through step 3. Then run the matching command from `Extras/Proxy`, using the actual configuration path.
+For Claude Code, first generate `.mcp.json` through step 3. Then run the matching command from `Extras/Proxy`, using the actual configuration path.
 
 Windows PowerShell:
 
@@ -118,6 +155,8 @@ Restart the MCP client once after installation so it loads the changed configura
 
 To restore the direct HTTP entry, run the same command with `uninstall` instead of `install`. Reload the client configuration afterward.
 
+For OpenCode, the proxy installer does not rewrite `opencode.json(c)`. Configure `unreal-mcp-proxy` as a local MCP server using the stdio command form documented in the engine's `Extras/Proxy/README.md`. The repository's `opencode/` plugin detects that entry and does not add a duplicate direct connection.
+
 The proxy stores catalogs in the operating system's user cache directory. Scope includes configuration path, proxy path, engine build identity, and client protocol version. It does not supply a fixed Unreal tool catalog. See the engine's `Extras/Proxy/README.md` for cache behavior and transport limits in your build.
 
 ## Verifying
@@ -127,6 +166,7 @@ After the editor is running with the plugin enabled and auto-start on:
 - The Output Log shows MCP server startup messages.
 - `list_toolsets` (one of the three tool-search meta-tools) returns successfully.
 - `/mcp` in Claude Code lists `unreal-mcp`, or `unreal-mcp-proxy` when installed, as connected.
+- `opencode mcp list` in OpenCode lists `unreal-mcp`, or `unreal-mcp-proxy` when installed. OpenCode can load `@unreal-mcp`, `@create-toolset`, and `@unreal-skill` when the plugin is loaded.
 
 A connected proxy or visible cached tools do not prove that Unreal is reachable. Confirm with a successful read-only Unreal tool call.
 

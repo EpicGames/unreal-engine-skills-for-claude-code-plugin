@@ -12,6 +12,10 @@ Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools expos
 
 - **SessionStart** (`hooks/unreal-context.sh`) - injects a short note identifying the repo as an Unreal Engine project so Claude defaults to UE conventions (C++/`UObject`, Slate, UHT) and prefers the `unreal-mcp` skill. Runs on `startup`, `resume`, and `clear`.
 
+### OpenCode
+
+- **`opencode/`** - OpenCode port that registers the MCP server, loads the same skills, and injects the project note without a bash dependency. See [`opencode/README.md`](opencode/README.md).
+
 ## Prerequisites
 
 1. **Unreal Editor** with the **ModelContextProtocol** and **AllToolsets** plugins enabled (`AllToolsets` provides the tools; the server exposes none without it)
@@ -65,6 +69,21 @@ Commit this to `.claude/settings.json` in the project that should use the plugin
 4. Run `/mcp`. Check for `unreal-mcp`, or `unreal-mcp-proxy` if you installed the proxy. A connected proxy does not prove that Unreal is reachable.
 5. Try: "List all actors in the current level".
 
+## OpenCode
+
+An OpenCode port lives in [`opencode/`](opencode/README.md). It registers `unreal-mcp` at the default endpoint, loads the same three skills, and injects the Unreal project note through an OpenCode session hook. The hook runs in-process, so it does not require bash and works on native Windows.
+
+Add the `opencode/` directory to `plugins` in `opencode.json(c)`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["/absolute/path/to/unreal-engine-skills-for-claude-code-plugin/opencode"]
+}
+```
+
+See [`opencode/README.md`](opencode/README.md) for endpoint options, manual MCP configuration, verification, and the differences from the Claude Code plugin. The `.mcp.json` note below applies to Claude Code only; OpenCode has no equivalent of `ModelContextProtocol.GenerateClientConfig`.
+
 ## Configuration
 
 The default port is **8000** with URL path `/mcp`. If the port is in use, run `ModelContextProtocol.StartServer <port>` in the console with a different port number.
@@ -95,7 +114,7 @@ Installing this plugin gives Claude broad, live access to the running Unreal Edi
 
 ## What's Available
 
-All tools are auto-discovered by Claude Code via MCP. No manual configuration needed. Tools cover the full editor surface across these domains:
+All tools are auto-discovered through MCP. No manual configuration needed. Tools cover the full editor surface across these domains:
 
 - **Actors and Scene** - spawn, transform, inspect, and delete actors; manage components and outliner folders
 - **Blueprints** - create, edit graphs, add nodes, connect pins, manage variables, compile
