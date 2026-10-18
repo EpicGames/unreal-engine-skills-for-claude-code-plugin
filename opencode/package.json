@@ -1,0 +1,29 @@
+{
+  "name": "unreal-engine-skills-opencode",
+  "version": "0.1.0",
+  "description": "OpenCode port of Unreal Engine Skills: registers the unreal-mcp server, loads the Unreal skills, and injects project context.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EpicGames/unreal-engine-skills-for-claude-code-plugin",
+    "directory": "opencode"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "index.ts",
+    "project.ts",
+    "skills.ts",
+    "skills/",
+    "README.md"
+  ],
+  "scripts": {
+    "prepack": "node scripts/sync-skills.mjs",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
