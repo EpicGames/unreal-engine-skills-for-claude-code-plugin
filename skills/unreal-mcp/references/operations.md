@@ -49,3 +49,10 @@ If calls still fail, check the editor's MCP startup log, the configured endpoint
 | Tool calls hang or return errors                      | Editor may be busy compiling, loading a level, or in PIE. Wait and retry. For long compiles, prefer `LiveCodingToolset.CompileLiveCoding`. It returns when the compile actually finishes.                                                                                                                           |
 | `AIAssistantToolset.GetDockedContext` returns empty   | The Claude Code tab must be docked inside an asset editor (Blueprint, Material, etc.) to provide docked context. If undocked, that tool has nothing to report.                                                                                                                                                      |
 | Concurrent tool calls produce conflicting results     | MCP accepts concurrent requests and handles dispatch synchronization. Serialize dependent calls and mutations that affect the same state. Use parallel calls only for independent work when the tools support safe overlap.                                                                                         |
+
+## Known toolset quirks
+
+Engine-side behaviours seen in UE 5.8.3 that look like tool failures but are not. Remove an entry once the engine fixes it.
+
+- **Optional struct parameters cannot be omitted.** A parameter documented as optional, and absent from the schema's `required` list, can still fail when left out of `arguments`. The error reads `input param "<name>" needs a default value`. Pass an explicit `null` for each such parameter; this gives the documented default behaviour. For example, `EditorToolset.EditorAppToolset.CaptureViewport` takes `{"captureTransform": null, "annotations": null}` to capture from the viewport's current camera with no annotations.
+- **`SceneTools.take_screenshot` does not exist.** The `SlateInspectorToolset.Screenshot` description tells you to use it for the 3D viewport. Use `EditorToolset.EditorAppToolset.CaptureViewport` instead. Keep `SlateInspectorToolset.Screenshot` for Editor UI.
