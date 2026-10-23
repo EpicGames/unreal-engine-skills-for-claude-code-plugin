@@ -39,12 +39,20 @@ With the optional proxy, the client connects to `unreal-mcp-proxy` instead of di
 
 If calls still fail, check the editor's MCP startup log, the configured endpoint, and proxy stderr. With multiple editors, identify which process owns the configured port. A running editor alone does not prove that the proxy targets its MCP server. Follow the recorded `.mcp.json` entry and the engine's `Extras/Proxy/README.md` for your build's transport limits.
 
+## Identify the editor
+
+With several editors running, confirm which one answers before making changes.
+
+- Recent engine builds include instance metadata in the `initialize` result, and in `server/discover` on protocol `2026-07-28`, under `_meta["com.epicgames.unrealengine/instance"]`: `processId`, `engineVersion`, `engineBranch`, `engineChangelist`, `projectName`, `engineDirectory`, `projectDirectory`, `projectFile`. Probe the configured endpoint and compare `projectDirectory` or `engineDirectory` with the workspace you expect.
+- That checks the port, not your session: a client that loaded an older configuration can still reach a different editor. If `execute_python` is available, run `import os; print(os.getpid())` once and compare it with `processId`.
+- Without the metadata, find the process that owns the configured port and check its executable path.
+
 ## Troubleshooting matrix
 
 | Symptom                                               | What to do                                                                                                                                                                                                                                                                                                          |
 |-------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Unreal tools are missing, or `list_toolsets` errors | Check for both `unreal-mcp` and `unreal-mcp-proxy` in the client configuration. Check the editor's MCP startup log and configured endpoint. For a proxy connection, follow **Proxy recovery** above before concluding that the editor is stopped. |
-| Editor logs "Failed to listen on port"                | Another process holds the default port. Change `ServerPortNumber` in the per-user `EditorPerProjectUserSettings.ini` (see `setup.md`), or pass `-ModelContextProtocolPort=<port>` on the next launch; restart the editor, and re-run `ModelContextProtocol.GenerateClientConfig ClaudeCode` to refresh `.mcp.json`. |
+| Editor logs "Failed to listen on port"                | Another process holds the default port. Change `ServerPortNumber` in the per-user `EditorPerProjectUserSettings.ini` (see `setup.md`), or pass `-ModelContextProtocolPort=<port>` on the next launch; restart the editor, and re-run `ModelContextProtocol.GenerateClientConfig ClaudeCode` to refresh `.mcp.json`. With several editors, give each workspace its own port (`setup.md` step 5). |
 | A toolset you expect (e.g. `NiagaraTools`) is missing | Run `ModelContextProtocol.RefreshTools`. If still missing, the toolset's plugin may not be enabled in the `.uproject`. Check there.                                                                                                                                                                                 |
 | Tool calls hang or return errors                      | Editor may be busy compiling, loading a level, or in PIE. Wait and retry. For long compiles, prefer `LiveCodingToolset.CompileLiveCoding`. It returns when the compile actually finishes.                                                                                                                           |
 | `AIAssistantToolset.GetDockedContext` returns empty   | The Claude Code tab must be docked inside an asset editor (Blueprint, Material, etc.) to provide docked context. If undocked, that tool has nothing to report.                                                                                                                                                      |

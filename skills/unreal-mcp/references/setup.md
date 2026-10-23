@@ -120,6 +120,17 @@ To restore the direct HTTP entry, run the same command with `uninstall` instead 
 
 The proxy stores catalogs in the operating system's user cache directory. Scope includes configuration path, proxy path, engine build identity, and client protocol version. It does not supply a fixed Unreal tool catalog. See the engine's `Extras/Proxy/README.md` for cache behavior and transport limits in your build.
 
+## 5. Several editors at once
+
+Every editor serves MCP on `ServerPortNumber`, 8000 by default. A second editor on the same machine can't bind that port, and a client pointed at it reaches the first editor instead. Give each project or engine workspace its own fixed port:
+
+1. Pick one port per workspace (for example 8100, 8101, ...) and keep it. Don't rely on the editor moving to the next free port: a client keeps talking to whatever answers on its configured port.
+2. Set `ServerPortNumber` in that project's `EditorPerProjectUserSettings.ini` (step 2), or pass `-ModelContextProtocolPort=<port>` at launch.
+3. Point that workspace's `.mcp.json` at the same port (step 3) and install the proxy into it (step 4), so each client session follows its own editor across restarts.
+4. Start each client session from its own workspace, so it loads that workspace's `.mcp.json`.
+
+To check which editor answered, see **Identify the editor** in `operations.md`.
+
 ## Verifying
 
 After the editor is running with the plugin enabled and auto-start on:
