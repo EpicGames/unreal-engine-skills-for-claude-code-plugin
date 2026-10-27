@@ -15,7 +15,10 @@ is_project_root() {
   # the Unreal source tree contains an `Engine` module at
   # `Engine/Source/Runtime/Engine`, so walking up from a Runtime module would
   # otherwise short-circuit at `Source/Runtime` and mis-identify it as the root.
-  local directory="$1"
+  # Strip a trailing slash so the filesystem root is checked as `/...`, not
+  # `//...`: Git Bash on Windows treats a leading `//` as a UNC path, and
+  # globbing `//*.uproject` enumerates the network (tens of seconds).
+  local directory="${1%/}"
   [ -f "$directory/GenerateProjectFiles.bat" ] && return 0
   [ -f "$directory/GenerateProjectFiles.sh" ] && return 0
   [ -f "$directory/GenerateProjectFiles.command" ] && return 0
