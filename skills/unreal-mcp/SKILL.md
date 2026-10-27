@@ -48,7 +48,7 @@ A relevant project skill's instructions take precedence over your generic defaul
 ## Reference files
 
 - `references/setup.md`: first-time MCP server setup, client configuration, and optional proxy installation.
-- `references/operations.md`: console commands, settings, proxy recovery, and troubleshooting for missing tools or failed calls.
+- `references/operations.md`: console commands, settings, proxy recovery, troubleshooting for missing tools or failed calls, and known toolset quirks (optional struct parameters that must be passed as `null`, viewport screenshots).
 
 ## Companion skills
 
