@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          python3 -m json.tool .claude-plugin/plugin.json > /dev/null
+          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+          python3 -m json.tool hooks/hooks.json > /dev/null
+          echo "All JSON files valid."
+
+      - name: Check bash script syntax
+        run: |
+          bash -n hooks/unreal-context.sh
+          bash -n tests/test_hooks.sh
+          echo "Bash scripts syntax OK."
+
+      - name: Run Bash hook tests
+        run: |
+          bash tests/test_hooks.sh
+
+      - name: Run PowerShell hook tests on pwsh
+        run: |
+          pwsh -File tests/test_hooks.ps1
+
+  windows-test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run PowerShell hook tests on Windows
+        shell: pwsh
+        run: |
+          pwsh -File tests/test_hooks.ps1

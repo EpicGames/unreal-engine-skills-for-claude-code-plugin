@@ -22,10 +22,10 @@ Control Unreal Editor directly from Claude Code via MCP. Hundreds of tools expos
 
 Supported: **macOS**, **Linux**, and **Windows via Git Bash or WSL**.
 
-The `SessionStart` hook is a bash script (`hooks/unreal-context.sh`) invoked by `hooks/hooks.json` as `bash ${CLAUDE_PLUGIN_ROOT}/hooks/unreal-context.sh`. It requires a working `bash` on `PATH`:
+The `SessionStart` hook injects project context at startup (`hooks/unreal-context.sh` for bash, with a companion `hooks/unreal-context.ps1` for PowerShell). `hooks/hooks.json` invokes `bash ${CLAUDE_PLUGIN_ROOT}/hooks/unreal-context.sh`, which requires a working `bash` on `PATH`:
 
 - **macOS / Linux:** works out of the box.
-- **Windows:** install **Git for Windows** (provides Git Bash) or run Claude Code under **WSL**. Native PowerShell without one of those does not have `bash` on `PATH`, and the hook will not run. The plugin's MCP tools still work; you just lose the short project-context note the hook injects at session start. There is no separate PowerShell companion script today.
+- **Windows:** install **Git for Windows** (provides Git Bash) or run Claude Code under **WSL**. For native PowerShell environments without `bash` on `PATH`, the companion script `hooks/unreal-context.ps1` provides identical detection logic and can be invoked directly (`pwsh -File "${CLAUDE_PLUGIN_ROOT}/hooks/unreal-context.ps1"`). The plugin's MCP tools work regardless; you only lose the session-start context note if neither hook runs.
 
 ## Installation
 
@@ -56,6 +56,16 @@ Commit this to `.claude/settings.json` in the project that should use the plugin
   }
 }
 ```
+
+### Install from local source (development / fork)
+
+To install directly from a local clone or fork:
+
+```
+/plugin marketplace add /path/to/unreal-engine-skills-for-claude-code
+/plugin install unreal-engine-skills-for-claude-code@unreal-engine-skills-for-claude-code
+```
+
 
 ## Verification
 
