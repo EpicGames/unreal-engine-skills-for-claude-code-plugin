@@ -42,7 +42,7 @@ Every Unreal skill has two fields.
 
 **Instructions**: The skill's payload. The actual guidance the agent follows when the skill is active. Apply the principles above: focus on what tools can't teach and cut anything not essential.
 
-The agent discovers and dispatches tools at runtime through the unreal-mcp meta-tools (`list_toolsets`, `describe_toolset`, `call_tool`), so write instructions that assume the agent will find the tools it needs rather than naming a fixed toolset list.
+The agent discovers and dispatches tools at runtime through the unreal-mcp meta-tools (`list_toolsets`, `describe_toolsets`, `describe_tools`, `call_tool`; `describe_toolset` in 5.8), so write instructions that assume the agent will find the tools it needs rather than naming a fixed toolset list.
 
 ## Python Skills
 

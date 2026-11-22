@@ -23,7 +23,7 @@ A good toolset is:
 
 Work through these questions in order before touching any code.
 
-**1. Does the functionality already exist?** If the editor is running, call `list_toolsets` via MCP, then `describe_toolset` on anything relevant. If MCP isn't available, search the codebase for folders named `Toolsets` and read the C++ headers or Python toolset files there. If the capability is already exposed, there's nothing to do. Tell the user and point them to the right tool.
+**1. Does the functionality already exist?** If the editor is running, call `list_toolsets` via MCP, then `describe_toolsets` (`describe_toolset` in 5.8) on anything relevant. If MCP isn't available, search the codebase for folders named `Toolsets` and read the C++ headers or Python toolset files there. If the capability is already exposed, there's nothing to do. Tell the user and point them to the right tool.
 
 **2. Is the request more general than it sounds?** Users often ask for something domain-specific that is actually an instance of a broader pattern. Before looking for a domain toolset, ask whether the capability truly belongs to that domain or whether it applies more widely. For example, a request for "read blueprint asset metadata" sounds like it belongs in `BlueprintTools`, but metadata applies to all assets, so the right place is `AssetTools`. Solving it generically is almost always better than solving it narrowly.
 
