@@ -136,7 +136,7 @@ To check which editor answered, see **Identify the editor** in `operations.md`.
 After the editor is running with the plugin enabled and auto-start on:
 
 - The Output Log shows MCP server startup messages.
-- `list_toolsets` (one of the three tool-search meta-tools) returns successfully.
+- `list_toolsets` (a tool-search meta-tool) returns successfully.
 - `/mcp` in Claude Code lists `unreal-mcp`, or `unreal-mcp-proxy` when installed, as connected.
 
 A connected proxy or visible cached tools do not prove that Unreal is reachable. Confirm with a successful read-only Unreal tool call.

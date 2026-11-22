@@ -17,7 +17,7 @@ Run these from the Unreal Editor console (`~`).
 
 `tools/list` has two modes, controlled by the `bEnableToolSearch` UPROPERTY on `UModelContextProtocolSettings` (default `true`):
 
-- **`True`** (default): `tools/list` returns only `list_toolsets`, `describe_toolset`, `call_tool`. Toolset tools are dispatched server-side through `call_tool` and stay out of the prompt; the catalog never changes mid-session, so the prompt cache stays warm.
+- **`True`** (default): `tools/list` returns only the tool-search meta-tools: `list_toolsets`, `describe_toolsets`, `describe_tools`, `call_tool` from 5.9, or `list_toolsets`, `describe_toolset`, `call_tool` in 5.8. Toolset tools are dispatched server-side through `call_tool` and stay out of the prompt; the catalog never changes mid-session, so the prompt cache stays warm.
 - **`False`**: every toolset tool is registered as a native MCP tool at startup, schemas visible upfront. Used by the hash-mapping commandlet.
 
 Override in the same `.ini` used for `bAutoStartServer`:
